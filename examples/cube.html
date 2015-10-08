@@ -4,21 +4,55 @@
 	<head>
 		<title>three.js webgl - geometry - cube</title>
 		<meta charset="utf-8">
+        <script src="js/jquery-1.11.3.min.js"></script>
+        <script>
+            var walls = new Array();
+            
+            function showWalls()
+            {
+                /*var text = "var walls = [";
+                
+                for(var i = 0; i < walls.length; i++)
+                {
+                    if(i != 0)
+                    {
+                        text += ",";
+                    }
+                    text += "{\"x\":" + walls[i][0] + ",\"y\":" + walls[i][1] + "}";
+                }
+                
+                text += "];";
+                
+                alert(text);*/
+                
+                //init();
+			    //animate();
+                drawWalls();
+                walls = [];
+            }
+        </script>
 		<style>
-			body {
-				margin: 0px;
-				background-color: #000000;
-				overflow: hidden;
-			}
+			
+            
+            #hello {
+                margin: 100px;
+                padding: 0px;
+                top: 100px;
+                left: 100px;
+            }
 		</style>
 	</head>
 	<body>
-
+<div>
+        <div id="hello" />
+        
 		<script src="../build/three.min.js"></script>
 		<script src="js/OrbitControls.js"></script>
 
 		<script>
 
+            //var walls = [{"x":143,"y":882},{"x":742,"y":885},{"x":745,"y":195},{"x":592,"y":195},{"x":590,"y":677},{"x":363,"y":666},{"x":362,"y":474},{"x":441,"y":475},{"x":442,"y":345},{"x":147,"y":345},{"x":143,"y":881}];
+        
 			var camera, scene, renderer;
 			var mesh;
 
@@ -27,23 +61,101 @@
 
 			function init() {
 
-				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
-				camera.position.z = 400;
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 );
+				camera.position.z = 0;
+                camera.position.y = 400;
 
 				scene = new THREE.Scene();
 
-				//var texture = THREE.ImageUtils.loadTexture( 'textures/crate.gif' );
+                /*for(var i = 0; i < walls.length - 1; i++)
+                {
+                    
+                    var a = walls[i+1][0] - walls[i][0];
+                    var b = walls[i+1][1] - walls[i][1];
+                    var distance = Math.sqrt(a*a + b*b);
+                    var angle = Math.atan2(a, b);
+                    
+                    var pivot1 = new THREE.Object3D();
+                    
+                    var geometry = new THREE.BoxGeometry( 2, 50, distance);
+                    var material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+                    mesh = new THREE.Mesh( geometry, material );
+                    
+                    
+                    
+                    mesh.position.x = 0;
+                    mesh.position.y = 0;
+                    
+                    // has to be half of the length
+                    mesh.position.z = 0 - distance / 2.0;
+                    
+                    pivot1.rotation.y = -angle;
+                    
+                    pivot1.position.x = walls[i][0];
+                    pivot1.position.z = -walls[i][1];
+                    
+                    pivot1.add(mesh);
+                    
+                    scene.add(pivot1);
+                }
+                
+                var geometry = new THREE.BoxGeometry( 15, 15, 15);
+                var material = new THREE.MeshBasicMaterial( {color: 0x0000ff} );
+                var mesh = new THREE.Mesh( geometry, material );
+                mesh.position.x = 0;
+                mesh.position.y = 0;
+                scene.add(mesh);*/
+                
 
-				var geometry = new THREE.BoxGeometry( 200, 200, 200 );
-				//var material = new THREE.MeshBasicMaterial( { map: texture } );
-
-				mesh = new THREE.Mesh( geometry);//, material );
-				scene.add( mesh );
-
-				renderer = new THREE.WebGLRenderer();
+				renderer = new THREE.WebGLRenderer({antialias: true});
+                renderer.setClearColor( 0xffffff, 1 );
 				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				document.body.appendChild( renderer.domElement );
+				renderer.setSize( 500 * window.innerWidth / window.innerHeight, 500 );
+                
+                $("#hello").width(500 * window.innerWidth / window.innerHeight).height(500);
+
+                var light = new THREE.AmbientLight( 0xc0c0c0 ); // soft white light
+                scene.add( light );
+
+                var posX = -500;
+                var posY = 3000;
+                var posZ = -2000;
+                
+                for(var i = 0; i < 20; i++)
+                {
+                    for(var j = 0; j < 20; j++)
+                    {
+                        // create a point light
+                        var pointLight = new THREE.PointLight(0x010101);
+
+                        // set its position
+                        pointLight.position.x = posX + i*200;
+                        pointLight.position.y = posY;
+                        pointLight.position.z = posZ + j*200;
+
+                        // add to the scene
+                        scene.add(pointLight);
+                        
+                        var geometry = new THREE.BoxGeometry( 15, 15, 15);
+                        var material = new THREE.MeshBasicMaterial( {color: 0x0000ff} );
+                        var mesh = new THREE.Mesh( geometry, material );
+                        //mesh.position.x = 0;
+                        //mesh.position.y = 0;
+                        
+                        mesh.position.x = posX + i*200;
+                        mesh.position.y = posY;
+                        mesh.position.z = posZ + j*200;
+                        
+                        scene.add(mesh);
+                    }
+                
+                }
+                
+				//document.body.appendChild( renderer.domElement );
+                
+                var container = document.getElementById( 'hello' );
+                //document.body.appendChild( container );
+                container.appendChild( renderer.domElement );
 
 				//
 
@@ -62,18 +174,112 @@
 			}
 
 			function animate() {
-
+            
 				requestAnimationFrame( animate );
 
 				//mesh.rotation.x += 0.005;
 				//mesh.rotation.y += 0.01;
 
 				renderer.render( scene, camera );
-
-                                controls.update();
+                controls.update();
 			}
+            
+            function drawWalls()
+            {
+                for(var i = 0; i < walls.length - 1; i++)
+                {
+                    
+                    var a = walls[i+1][0] - walls[i][0];
+                    var b = walls[i+1][1] - walls[i][1];
+                    var distance = Math.sqrt(a*a + b*b);
+                    var angle = Math.atan2(a, b);
+                    
+                    var pivot1 = new THREE.Object3D();
+                    
+                    var geometry = new THREE.BoxGeometry( 2, 100, distance);
+                    var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4} );
+                    mesh = new THREE.Mesh( geometry, material );
+                    
+                    
+                    
+                    mesh.position.x = 0;
+                    mesh.position.y = 0;
+                    
+                    // has to be half of the length
+                    mesh.position.z = 0 - distance / 2.0;
+                    
+                    pivot1.rotation.y = -angle;
+                    
+                    pivot1.position.x = walls[i][0];
+                    pivot1.position.z = -walls[i][1];
+                    
+                    pivot1.add(mesh);
+                    
+                    scene.add(pivot1);
+                }
+            }
 
 		</script>
+        
+        <div id="drop_zone">Drop files here</div>
+        <output id="list"></output>
+        <button onclick="showWalls()">Show</button>
+        <script>
+          function handleFileSelect(evt) {
+            evt.stopPropagation();
+            evt.preventDefault();
 
-	</body>
+            var files = evt.dataTransfer.files; // FileList object.
+
+            // files is a FileList of File objects. List some properties.
+            var output = [];
+            for (var i = 0, f; f = files[i]; i++) {
+                    // Only process image files.
+              if (!f.type.match('image.*')) {
+                continue;
+              }
+
+              var reader = new FileReader();
+
+              // Closure to capture the file information.
+              reader.onload = (function(theFile) {
+                return function(e) {
+                  // Render thumbnail.
+                  var span = document.createElement('span');
+                  span.innerHTML = ['<a id="test"><img class="thumb" src="', e.target.result,
+                                    '" title="', escape(theFile.name), '"/></a>'].join('');
+                  document.getElementById('list').insertBefore(span, null);
+                  
+                  $(function() {
+                    $("#test").click(function(e) {
+                      var offset = $(this).offset();
+                      var relativeX = (e.pageX - offset.left);
+                      var relativeY = (offset.top - e.pageY);
+                      
+                      walls.push([relativeX, relativeY]);
+                      //alert(walls);
+                      $(".position").val("afaf");
+                    });
+                    });
+                };
+              })(f);
+
+              // Read in the image file as a data URL.
+              reader.readAsDataURL(f);
+            }
+            //document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+          }
+
+          function handleDragOver(evt) {
+            evt.stopPropagation();
+            evt.preventDefault();
+            evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+          }
+
+          // Setup the dnd listeners.
+          var dropZone = document.getElementById('drop_zone');
+          dropZone.addEventListener('dragover', handleDragOver, false);
+          dropZone.addEventListener('drop', handleFileSelect, false);
+        </script>
+</div>	</body>
 </html>
