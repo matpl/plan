@@ -64,7 +64,7 @@
 
 				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 );
 				camera.position.z = 0;
-                camera.position.y = 400;
+                camera.position.y = 800;
 
 				scene = new THREE.Scene();
 
@@ -118,39 +118,6 @@
                 var light = new THREE.AmbientLight( 0xc0c0c0 ); // soft white light
                 scene.add( light );
 
-                /*var posX = -500;
-                var posY = 50;
-                var posZ = -2000;
-                
-                for(var i = 0; i < 20; i++)
-                {
-                    for(var j = 0; j < 20; j++)
-                    {
-                        // create a point light
-                        var pointLight = new THREE.PointLight(0x010101);
-
-                        // set its position
-                        pointLight.position.x = posX + i*200;
-                        pointLight.position.y = posY;
-                        pointLight.position.z = posZ + j*200;
-
-                        // add to the scene
-                        //scene.add(pointLight);
-                        
-                        var geometry = new THREE.BoxGeometry( 15, 15, 15);
-                        var material = new THREE.MeshBasicMaterial( {color: 0x0000ff} );
-                        var mesh = new THREE.Mesh( geometry, material );
-                        //mesh.position.x = 0;
-                        //mesh.position.y = 0;
-                        
-                        mesh.position.x = posX + i*200;
-                        mesh.position.y = posY;
-                        mesh.position.z = posZ + j*200;
-                        
-                        scene.add(mesh);
-                    }
-                
-                }*/
 
 var posX = 250;
                 var posY = 50;
@@ -170,7 +137,8 @@ var pointLight = new THREE.PointLight(0x4f4f4f);
 scene.add(new THREE.PointLightHelper(pointLight, 3));           
 
 var hemLight = new THREE.HemisphereLight(0xfff4ca, 0xffce0f, .1);
-scene.add(hemLight);             
+hemLight.position.set( 0, -1, 0 );
+scene.add(hemLight);
 
                         /*var geometry = new THREE.BoxGeometry( 15, 15, 15);
                         var material = new THREE.MeshBasicMaterial( {color: 0x0000ff} );
@@ -215,12 +183,27 @@ scene.add(hemLight);
 
 				renderer.render( scene, camera );
                 controls.update();
+                
+                //$("#camerastuff").val(camera.position.x + " " + camera.position.y + " " + camera.position.z);
 			}
             
             function drawWalls()
             {
+                var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4} );
+                
+                var totalX = 0;
+                var totalY = 0;
                 for(var i = 0; i < walls.length - 1; i++)
                 {
+                    if(i == 0)
+                    {
+                        totalX += walls[i][0];
+                        totalY += walls[i][1];
+                    }
+                    totalX += walls[i+1][0];
+                    totalY += walls[i+1][1];
+                    
+                    
                     var a = walls[i+1][0] - walls[i][0];
                     var b = walls[i+1][1] - walls[i][1];
 
@@ -230,16 +213,8 @@ scene.add(hemLight);
                     var pivot1 = new THREE.Object3D();
                     
                     var geometry = new THREE.BoxGeometry( 2, 100, distance);
-                    var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4} );
-
-/*var material = new THREE.MeshPhongMaterial({
-  color: 0xc9c8c4,
-  shininess: 10
-});*/
-
+                    
                     mesh = new THREE.Mesh( geometry, material );
-                    
-                    
                     
                     mesh.position.x = 0;
                     mesh.position.y = 0;
@@ -256,6 +231,39 @@ scene.add(hemLight);
                     
                     scene.add(pivot1);
                 }
+                
+                camera.position.x = totalX / walls.length;
+                camera.position.z = -(totalY / walls.length);
+                
+                /*geometry = new THREE.BoxGeometry( 2, 1500, 1500);
+                    
+                mesh = new THREE.Mesh( geometry, material );
+                mesh.rotation.z = 90 * Math.PI / 180;
+                mesh.position.y = -50;
+                mesh.position.x = 250;
+                mesh.position.z = -250;
+                scene.add(mesh);*/
+                
+                material = new THREE.MeshLambertMaterial( {color: 0xe6e6e6} );
+                material.side = THREE.DoubleSide;
+                var rectShape = new THREE.Shape();
+                for(var i = 0; i < walls.length; i++)
+                {
+                    if(i == 0)
+                    {
+                        rectShape.moveTo( walls[i][0],walls[i][1] );    
+                    }
+                    else
+                    {
+                        rectShape.lineTo( walls[i][0],walls[i][1] );    
+                    }
+                }
+
+                var rectGeom = new THREE.ShapeGeometry( rectShape );
+                var rectMesh = new THREE.Mesh( rectGeom, material ) ;
+                rectMesh.rotation.x = -90 * Math.PI / 180;
+                rectMesh.position.y = -50;
+                scene.add( rectMesh );
             }
 
 		</script>
@@ -320,5 +328,7 @@ scene.add(hemLight);
           dropZone.addEventListener('dragover', handleDragOver, false);
           dropZone.addEventListener('drop', handleFileSelect, false);
         </script>
-</div>	</body>
+</div>
+<input type="text" id="camerastuff" style="width: 1000px" />
+</body>
 </html>
