@@ -42,17 +42,24 @@
                 top: 100px;
                 left: 100px;
             }
+            body {
+                margin: 0px;
+                padding: 0px;
+            }
 		</style>
 	</head>
 	<body>
-<div>
-        <div id="hello" />
         
 		<script src="../build/three.min.js"></script>
 		<script src="js/OrbitControls.js"></script>
 
 		<script>
 
+            var renderWidth, renderHeight;
+            
+            var raycaster = new THREE.Raycaster(); // create once
+            var mouse = new THREE.Vector2(); // create once
+            var targetList = [];
         
 			var camera, scene, renderer;
 			var mesh;
@@ -61,7 +68,7 @@
 			animate();
 
 			function init() {
-
+            
 				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 );
 				camera.position.z = 0;
                 camera.position.y = 800;
@@ -107,38 +114,40 @@
                 mesh.position.y = 0;
                 scene.add(mesh);*/
                 
+                renderWidth = 500 * window.innerWidth / window.innerHeight;
+                renderHeight = 500;
 
 				renderer = new THREE.WebGLRenderer({antialias: true});
                 renderer.setClearColor( 0xffffff, 1 );
 				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( 500 * window.innerWidth / window.innerHeight, 500 );
+				renderer.setSize( renderWidth, renderHeight );
+                //renderer.setSize(window.innerWidth, window.innerHeight);
                 
-                $("#hello").width(500 * window.innerWidth / window.innerHeight).height(500);
 
                 var light = new THREE.AmbientLight( 0xc0c0c0 ); // soft white light
                 scene.add( light );
 
 
-var posX = 250;
+                var posX = 250;
                 var posY = 50;
                 var posZ = -700;
 
-var pointLight = new THREE.PointLight(0x4f4f4f);
+                var pointLight = new THREE.PointLight(0x4f4f4f);
 
-                        // set its position
-                        pointLight.position.x = posX;
-                        pointLight.position.y = posY;
-                        pointLight.position.z = posZ;
+                // set its position
+                pointLight.position.x = posX;
+                pointLight.position.y = posY;
+                pointLight.position.z = posZ;
 
-                        // add to the scene
-                        scene.add(pointLight);
+                // add to the scene
+                scene.add(pointLight);
 
 
-scene.add(new THREE.PointLightHelper(pointLight, 3));           
+                scene.add(new THREE.PointLightHelper(pointLight, 3));           
 
-var hemLight = new THREE.HemisphereLight(0xfff4ca, 0xffce0f, .1);
-hemLight.position.set( 0, -1, 0 );
-scene.add(hemLight);
+                var hemLight = new THREE.HemisphereLight(0xfff4ca, 0xffce0f, .1);
+                hemLight.position.set( 0, -1, 0 );
+                scene.add(hemLight);
 
                         /*var geometry = new THREE.BoxGeometry( 15, 15, 15);
                         var material = new THREE.MeshBasicMaterial( {color: 0x0000ff} );
@@ -154,8 +163,8 @@ scene.add(hemLight);
 
 				//document.body.appendChild( renderer.domElement );
                 
-                var container = document.getElementById( 'hello' );
-                //document.body.appendChild( container );
+                container = document.createElement( 'div' );
+				document.body.appendChild( container );
                 container.appendChild( renderer.domElement );
 
 				//
@@ -163,6 +172,8 @@ scene.add(hemLight);
 				window.addEventListener( 'resize', onWindowResize, false );
                                 // Add OrbitControls so that we can pan around with the mouse.
                                 controls = new THREE.OrbitControls(camera, renderer.domElement);
+                
+                document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 			}
 
 			function onWindowResize() {
@@ -173,6 +184,67 @@ scene.add(hemLight);
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
 			}
+            
+            
+            function onDocumentMouseDown( event ) 
+            {
+            
+                mouse.x = ( event.clientX / renderWidth ) * 2 - 1;
+                mouse.y = - ( event.clientY / renderHeight ) * 2 + 1;
+                
+                raycaster.setFromCamera( mouse, camera );
+
+                
+                var intersects = raycaster.intersectObjects( targetList, true );
+                if(intersects.length > 0)
+                {
+                    var faceIndex = intersects[0].faceIndex;
+                    intersects[0].object.geometry.faces[intersects[0].faceIndex].color.setHex(0x0c474f);
+                    if(faceIndex % 2 == 0)
+                    {
+                        intersects[0].object.geometry.faces[intersects[0].faceIndex + 1].color.setHex(0x0c474f);
+                    }
+                    else
+                    {
+                        intersects[0].object.geometry.faces[intersects[0].faceIndex - 1].color.setHex(0x0c474f);
+                    }
+                    intersects[0].object.geometry.colorsNeedUpdate = true;
+                }
+                
+            
+                /*
+                //alert("click");
+                // the following line would stop any other event handler from firing
+                // (such as the mouse's TrackballControls)
+                // event.preventDefault();
+                
+                //console.log("Click.");
+                
+                // update the mouse variable
+                mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+                mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+                
+                // find intersections
+
+                // create a Ray with origin at the mouse position
+                //   and direction into the scene (camera direction)
+                var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
+                projector.unprojectVector( vector, camera );
+                var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+                // create an array containing all objects in the scene with which the ray intersects
+                var intersects = ray.intersectObjects( targetList );
+                
+                // if there is one (or more) intersections
+                if ( intersects.length > 0 )
+                {
+                    //console.log("Hit @ " + toString( intersects[0].point ) );
+                    // change the color of the closest face.
+                    intersects[ 0 ].face.color.setRGB( 0.8 * Math.random() + 0.2, 0, 0 ); 
+                    intersects[ 0 ].object.geometry.colorsNeedUpdate = true;
+                }*/
+
+            }
 
 			function animate() {
             
@@ -189,12 +261,29 @@ scene.add(hemLight);
             
             function drawWalls()
             {
-                var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4} );
+                var maxX = Number.MIN_VALUE;
+                var maxY = Number.MIN_VALUE;
+                var minX = Number.MAX_VALUE;
+                var minY = Number.MAX_VALUE;
+            
+                for(var i = 0; i < walls.length - 1; i++)
+                {
+                    maxX = Math.max(walls[i][0], maxX);
+                    maxY = Math.max(walls[i][1], maxY);
+                    
+                    minX = Math.min(walls[i][0], minX);
+                    minY = Math.min(walls[i][1], minY);
+                }
                 
+                var offsetX = (minX + maxX) / 2;
+                var offsetY = (minY + maxY) / 2;
+            
                 var totalX = 0;
                 var totalY = 0;
                 for(var i = 0; i < walls.length - 1; i++)
                 {
+                    var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4, vertexColors: THREE.FaceColors} );
+                
                     if(i == 0)
                     {
                         totalX += walls[i][0];
@@ -224,38 +313,32 @@ scene.add(hemLight);
                     
                     pivot1.rotation.y = -angle;
                     
-                    pivot1.position.x = walls[i][0];
-                    pivot1.position.z = -walls[i][1];
+                    pivot1.position.x = walls[i][0] - offsetX;
+                    pivot1.position.z = -walls[i][1] + offsetY;
                     
                     pivot1.add(mesh);
                     
                     scene.add(pivot1);
+                    
+                    targetList.push(mesh);
                 }
                 
                 camera.position.x = totalX / walls.length;
                 camera.position.z = -(totalY / walls.length);
                 
-                /*geometry = new THREE.BoxGeometry( 2, 1500, 1500);
-                    
-                mesh = new THREE.Mesh( geometry, material );
-                mesh.rotation.z = 90 * Math.PI / 180;
-                mesh.position.y = -50;
-                mesh.position.x = 250;
-                mesh.position.z = -250;
-                scene.add(mesh);*/
                 
-                material = new THREE.MeshLambertMaterial( {color: 0xe6e6e6} );
+                var material = new THREE.MeshLambertMaterial( {color: 0xe6e6e6} );
                 material.side = THREE.DoubleSide;
                 var rectShape = new THREE.Shape();
                 for(var i = 0; i < walls.length; i++)
                 {
                     if(i == 0)
                     {
-                        rectShape.moveTo( walls[i][0],walls[i][1] );    
+                        rectShape.moveTo( walls[i][0] - offsetX, walls[i][1] - offsetY);    
                     }
                     else
                     {
-                        rectShape.lineTo( walls[i][0],walls[i][1] );    
+                        rectShape.lineTo( walls[i][0] - offsetX, walls[i][1] - offsetY);    
                     }
                 }
 
@@ -265,11 +348,11 @@ scene.add(hemLight);
                 rectMesh.position.y = -50;
                 scene.add( rectMesh );
             }
-
+            
 		</script>
         
         <div id="drop_zone">Drop files here</div>
-        <output id="list"></output>
+        <canvas id="planCanvas"></canvas>
         <button onclick="showWalls()">Show</button>
         <script>
           function handleFileSelect(evt) {
@@ -285,36 +368,26 @@ scene.add(hemLight);
               if (!f.type.match('image.*')) {
                 continue;
               }
-
-              var reader = new FileReader();
-
-              // Closure to capture the file information.
-              reader.onload = (function(theFile) {
-                return function(e) {
-                  // Render thumbnail.
-                  var span = document.createElement('span');
-                  span.innerHTML = ['<a id="test"><img class="thumb" src="', e.target.result,
-                                    '" title="', escape(theFile.name), '"/></a>'].join('');
-                  document.getElementById('list').insertBefore(span, null);
-                  
-                  $(function() {
-                    $("#test").click(function(e) {
+              
+              var canvas = document.getElementById("planCanvas");
+              var context = canvas.getContext("2d");
+              var plan = new Image();
+              plan.src = URL.createObjectURL(f);
+              plan.onload = function() {
+                canvas.width = plan.width;
+                canvas.height = plan.height;
+                context.drawImage(plan, 0, 0);
+                URL.revokeObjectURL(plan.src);
+                
+                $("#planCanvas").click(function(e) {
                       var offset = $(this).offset();
                       var relativeX = (e.pageX - offset.left);
                       var relativeY = (offset.top - e.pageY);
                       
                       walls.push([relativeX, relativeY]);
-                      //alert(walls);
-                      $(".position").val("afaf");
-                    });
-                    });
-                };
-              })(f);
-
-              // Read in the image file as a data URL.
-              reader.readAsDataURL(f);
+                });
+              };
             }
-            //document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
           }
 
           function handleDragOver(evt) {
@@ -328,7 +401,5 @@ scene.add(hemLight);
           dropZone.addEventListener('dragover', handleDragOver, false);
           dropZone.addEventListener('drop', handleFileSelect, false);
         </script>
-</div>
-<input type="text" id="camerastuff" style="width: 1000px" />
 </body>
 </html>
