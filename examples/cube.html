@@ -355,6 +355,10 @@
         <canvas id="planCanvas"></canvas>
         <button onclick="showWalls()">Show</button>
         <script>
+
+          var lastX = - 1;
+          var lastY = -1;
+
           function handleFileSelect(evt) {
             evt.stopPropagation();
             evt.preventDefault();
@@ -376,6 +380,7 @@
               plan.onload = function() {
                 canvas.width = plan.width;
                 canvas.height = plan.height;
+
                 context.drawImage(plan, 0, 0);
                 URL.revokeObjectURL(plan.src);
                 
@@ -385,9 +390,41 @@
                       var relativeY = (offset.top - e.pageY);
                       
                       walls.push([relativeX, relativeY]);
+
+                      lastX = relativeX;
+                      lastY = relativeY * -1;
+
+                      drawArc(lastX, lastY, context);
+                });
+
+                $("#planCanvas").mousemove(function(e) {
+                      if(lastX > 0 && lastY > 0)
+                      {
+
+                          context.clearRect(0, 0, $("#planCanvas").width(), $("#planCanvas").height());
+                          context.drawImage(plan, 0, 0);
+                          drawArc(lastX, lastY, context);
+                          var offset = $(this).offset();
+                          var relativeX = (e.pageX - offset.left);
+                          var relativeY = (offset.top - e.pageY) * -1;
+
+                          context.beginPath();
+                          context.moveTo(lastX,lastY);
+                          context.lineTo(relativeX,relativeY);
+                          context.strokeStyle = 'green';
+                          context.stroke();
+                      }
                 });
               };
             }
+          }
+
+          function drawArc(x, y, context)
+          {
+              context.beginPath();
+              context.arc(x, y, 4, 0, 2 * Math.PI, false);
+              context.fillStyle = 'green';
+              context.fill();
           }
 
           function handleDragOver(evt) {
