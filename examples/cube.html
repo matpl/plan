@@ -4,6 +4,8 @@
 	<head>
 		<title>three.js webgl - geometry - cube</title>
 		<meta charset="utf-8">
+		<script src="../build/three.min.js"></script>
+		<script src="js/OrbitControls.js"></script>
         <script src="js/jquery-1.11.3.min.js"></script>
         <script src="js/floorplan.js"></script>
         <script>
@@ -52,9 +54,6 @@
 		</style>
 	</head>
 	<body>
-        
-		<script src="../build/three.min.js"></script>
-		<script src="js/OrbitControls.js"></script>
 
 		<script>
 
@@ -262,95 +261,10 @@
                 //$("#camerastuff").val(camera.position.x + " " + camera.position.y + " " + camera.position.z);
 			}
             
-            function drawWalls()
+			function drawWalls()
             {
-                var maxX = Number.MIN_VALUE;
-                var maxY = Number.MIN_VALUE;
-                var minX = Number.MAX_VALUE;
-                var minY = Number.MAX_VALUE;
-            
-                for(var i = 0; i < walls.length - 1; i++)
-                {
-                    maxX = Math.max(walls[i][0], maxX);
-                    maxY = Math.max(walls[i][1], maxY);
-                    
-                    minX = Math.min(walls[i][0], minX);
-                    minY = Math.min(walls[i][1], minY);
-                }
-                
-                var offsetX = (minX + maxX) / 2;
-                var offsetY = (minY + maxY) / 2;
-            
-                var totalX = 0;
-                var totalY = 0;
-                for(var i = 0; i < walls.length - 1; i++)
-                {
-                    var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4, vertexColors: THREE.FaceColors} );
-                
-                    if(i == 0)
-                    {
-                        totalX += walls[i][0];
-                        totalY += walls[i][1];
-                    }
-                    totalX += walls[i+1][0];
-                    totalY += walls[i+1][1];
-                    
-                    
-                    var a = walls[i+1][0] - walls[i][0];
-                    var b = walls[i+1][1] - walls[i][1];
-
-                    var distance = Math.sqrt(a*a + b*b);
-                    var angle = Math.atan2(a, b);
-                    
-                    var pivot1 = new THREE.Object3D();
-                    
-                    var geometry = new THREE.BoxGeometry( 2, 100, distance);
-                    
-                    mesh = new THREE.Mesh( geometry, material );
-                    
-                    mesh.position.x = 0;
-                    mesh.position.y = 0;
-                    
-                    // has to be half of the length
-                    mesh.position.z = 0 - distance / 2.0;
-                    
-                    pivot1.rotation.y = -angle;
-                    
-                    pivot1.position.x = walls[i][0] - offsetX;
-                    pivot1.position.z = -walls[i][1] + offsetY;
-                    
-                    pivot1.add(mesh);
-                    
-                    scene.add(pivot1);
-                    
-                    targetList.push(mesh);
-                }
-                
-                camera.position.x = totalX / walls.length;
-                camera.position.z = -(totalY / walls.length);
-                
-                
-                var material = new THREE.MeshLambertMaterial( {color: 0xe6e6e6} );
-                material.side = THREE.DoubleSide;
-                var rectShape = new THREE.Shape();
-                for(var i = 0; i < walls.length; i++)
-                {
-                    if(i == 0)
-                    {
-                        rectShape.moveTo( walls[i][0] - offsetX, walls[i][1] - offsetY);    
-                    }
-                    else
-                    {
-                        rectShape.lineTo( walls[i][0] - offsetX, walls[i][1] - offsetY);    
-                    }
-                }
-
-                var rectGeom = new THREE.ShapeGeometry( rectShape );
-                var rectMesh = new THREE.Mesh( rectGeom, material ) ;
-                rectMesh.rotation.x = -90 * Math.PI / 180;
-                rectMesh.position.y = -50;
-                scene.add( rectMesh );
-            }
+				threePlan.draw();
+			}
             
 		</script>
         
