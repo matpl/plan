@@ -5,7 +5,10 @@
 		<title>three.js webgl - geometry - cube</title>
 		<meta charset="utf-8">
         <script src="js/jquery-1.11.3.min.js"></script>
+        <script src="js/floorplan.js"></script>
         <script>
+        
+        
             //var walls = new Array();
 
             var walls = [[143,882],[742,885],[745,195],[592,195],[590,677],[363,666],[362,474],[441,475],[442,345],[147,345],[143,881]];
@@ -357,7 +360,10 @@
         <script>
 
           var lastX = - 1;
-          var lastY = -1;
+          // y is negative...
+          var lastY = 1;
+          
+          var plan;
 
           function handleFileSelect(evt) {
             evt.stopPropagation();
@@ -375,7 +381,7 @@
               
               var canvas = document.getElementById("planCanvas");
               var context = canvas.getContext("2d");
-              var plan = new Image();
+              plan = new Image();
               plan.src = URL.createObjectURL(f);
               plan.onload = function() {
                 canvas.width = plan.width;
@@ -389,42 +395,74 @@
                       var relativeX = (e.pageX - offset.left);
                       var relativeY = (offset.top - e.pageY);
                       
-                      walls.push([relativeX, relativeY]);
-
+                      // todowawa: hover shape
+                      // todowawa: shift for right angles and 45 degrees? (optional for now)
+                      // todowawa: ctrl to snap to edges?
+                      // todowawa: ctrl + shift to snap to edges and corners? (priorities to corners)
+                      // todowawa: find a point really close if possible. Else take the clicked point for now...
                       lastX = relativeX;
-                      lastY = relativeY * -1;
-
-                      drawArc(lastX, lastY, context);
+                      lastY = relativeY;
+                      
+                      
+                      if(floorPlan.exteriorWallChain.points.length > 0)
+                      {
+                          var distance = Math.sqrt(Math.pow(floorPlan.exteriorWallChain.points[0].x - relativeX, 2) + Math.pow(floorPlan.exteriorWallChain.points[0].y - relativeY, 2));
+                          if(distance > 6)
+                          {
+                              floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
+                          }
+                          else
+                          {
+                              // the contour is done
+                              floorPlan.exteriorWallChain.points.push(floorPlan.exteriorWallChain.points[0]);
+                              lastX = -1;
+                              lastY = 1;
+                          }
+                      }
+                      else
+                      {
+                          floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
+                      }
+                      
+                      redraw();
+                      
+                      //todowawa??
+                      //walls.push([relativeX, relativeY]);
                 });
 
                 $("#planCanvas").mousemove(function(e) {
-                      if(lastX > 0 && lastY > 0)
+                      if(lastX > 0 && lastY < 0)
                       {
-
                           context.clearRect(0, 0, $("#planCanvas").width(), $("#planCanvas").height());
                           context.drawImage(plan, 0, 0);
-                          drawArc(lastX, lastY, context);
+                          
+                          floorPlan.draw(context);
+                          
+                          drawArc(lastX, lastY * -1, context);
                           var offset = $(this).offset();
                           var relativeX = (e.pageX - offset.left);
                           var relativeY = (offset.top - e.pageY) * -1;
 
                           context.beginPath();
-                          context.moveTo(lastX,lastY);
+                          context.moveTo(lastX,lastY * -1);
                           context.lineTo(relativeX,relativeY);
-                          context.strokeStyle = 'green';
+                          context.strokeStyle = 'blue';
                           context.stroke();
                       }
                 });
               };
             }
           }
-
-          function drawArc(x, y, context)
+          
+          function redraw()
           {
-              context.beginPath();
-              context.arc(x, y, 4, 0, 2 * Math.PI, false);
-              context.fillStyle = 'green';
-              context.fill();
+              var canvas = document.getElementById("planCanvas");
+              var context = canvas.getContext("2d");
+          
+              context.clearRect(0, 0, $("#planCanvas").width(), $("#planCanvas").height());
+              context.drawImage(plan, 0, 0);
+                          
+              floorPlan.draw(context);
           }
 
           function handleDragOver(evt) {
