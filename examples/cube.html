@@ -276,6 +276,8 @@
           var lastX = - 1;
           // y is negative...
           var lastY = 1;
+		  
+		  var drawingExterior = true;
           
           var plan;
 
@@ -317,26 +319,52 @@
                       lastX = relativeX;
                       lastY = relativeY;
                       
-                      
-                      if(floorPlan.exteriorWallChain.points.length > 0)
+					  if(drawingExterior)
                       {
-                          var distance = Math.sqrt(Math.pow(floorPlan.exteriorWallChain.points[0].x - relativeX, 2) + Math.pow(floorPlan.exteriorWallChain.points[0].y - relativeY, 2));
-                          if(distance > 6)
-                          {
-                              floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
-                          }
-                          else
-                          {
-                              // the contour is done
-                              floorPlan.exteriorWallChain.points.push(floorPlan.exteriorWallChain.points[0]);
-                              lastX = -1;
-                              lastY = 1;
-                          }
-                      }
-                      else
-                      {
-                          floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
-                      }
+						  if(floorPlan.exteriorWallChain.points.length > 0)
+						  {
+							  var distance = Math.sqrt(Math.pow(floorPlan.exteriorWallChain.points[0].x - relativeX, 2) + Math.pow(floorPlan.exteriorWallChain.points[0].y - relativeY, 2));
+							  if(distance > 6)
+							  {
+								  floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
+							  }
+							  else
+							  {
+								  // the contour is done
+								  floorPlan.exteriorWallChain.points.push(floorPlan.exteriorWallChain.points[0]);
+								  lastX = -1;
+								  lastY = 1;
+								  drawingExterior = false;
+								  
+								  $(document).keyup(function(e)
+				                  {
+								      if(floorPlan.wallChains[floorPlan.wallChains.length - 1].points.length > 1 && e.which == 27)
+									  {
+									      // create another wall chain
+										  var chain = new WallChain();
+										  floorPlan.wallChains.push(chain);
+										  lastX = -1;
+							              lastY = 1;
+										  redraw();
+									  }
+								  });
+							  }
+						  }
+						  else
+						  {
+							  floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
+						  }					  
+					  }
+					  else
+					  {
+					      if(floorPlan.wallChains.length == 0)
+						  {
+							var chain = new WallChain();
+							floorPlan.wallChains.push(chain);
+						  }
+						  floorPlan.wallChains[floorPlan.wallChains.length - 1].points.push(new WallPoint(relativeX, relativeY));
+					      
+					  }
                       
                       redraw();
                       

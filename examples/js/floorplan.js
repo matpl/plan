@@ -52,13 +52,12 @@ function FloorPlan()
     {
         this.exteriorWallChain.draw(context);
 		
-		//todowawa : draw walls her. Other  color perhaps?
+		for(var i = 0; i < this.wallChains.length; i++)
+		{
+			//todowawa : draw walls her. Other  color perhaps?	
+			this.wallChains[i].draw(context);
+		}
     }
-	
-	this.drawThree = function()
-	{
-		
-	}
 }
 
 function ThreePlan(floorPlan)
@@ -130,6 +129,48 @@ function ThreePlan(floorPlan)
 			//todowawa: targetList and scene are in the other file
 			targetList.push(mesh);
 		}
+		
+		
+		
+		for(var j = 0; j < this.floorPlan.wallChains.length - 1; j++)
+		{
+			for(var i = 0; i < this.floorPlan.wallChains[j].points.length - 1; i++)
+			{
+				var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4, vertexColors: THREE.FaceColors} );
+			
+				var a = this.floorPlan.wallChains[j].points[i+1].x - this.floorPlan.wallChains[j].points[i].x;
+				var b = this.floorPlan.wallChains[j].points[i+1].y - this.floorPlan.wallChains[j].points[i].y;
+
+				var distance = Math.sqrt(a*a + b*b);
+				var angle = Math.atan2(a, b);
+				
+				var pivot1 = new THREE.Object3D();
+				
+				var geometry = new THREE.BoxGeometry( 2, 100, distance);
+				
+				mesh = new THREE.Mesh( geometry, material );
+				
+				mesh.position.x = 0;
+				mesh.position.y = 0;
+				
+				// has to be half of the length
+				mesh.position.z = 0 - distance / 2.0;
+				
+				pivot1.rotation.y = -angle;
+				
+				pivot1.position.x = this.floorPlan.wallChains[j].points[i].x - offsetX;
+				pivot1.position.z = -(this.floorPlan.wallChains[j].points[i].y) + offsetY;
+				
+				pivot1.add(mesh);
+				
+				scene.add(pivot1);
+				
+				//todowawa: targetList and scene are in the other file
+				targetList.push(mesh);
+			}
+		}
+		
+		
 		
 		camera.position.x = totalX / this.floorPlan.exteriorWallChain.points.length;
 		camera.position.z = -(totalY / this.floorPlan.exteriorWallChain.points.length);
