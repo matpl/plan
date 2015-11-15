@@ -280,6 +280,10 @@
 		  var drawingExterior = true;
           
           var plan;
+          
+          var clickPosition = null;
+          
+          var guideLines;
 
           function handleFileSelect(evt) {
             evt.stopPropagation();
@@ -307,15 +311,27 @@
                 URL.revokeObjectURL(plan.src);
                 
                 $("#planCanvas").click(function(e) {
-                      var offset = $(this).offset();
-                      var relativeX = (e.pageX - offset.left);
-                      var relativeY = (offset.top - e.pageY);
+                      var relativeX;
+                      var relativeY;
+                      
+                      if(clickPosition == null)
+                      {
+                          var offset = $(this).offset();
+                          relativeX = (e.pageX - offset.left);
+                          relativeY = (offset.top - e.pageY);
+                      }
+                      else
+                      {
+                          relativeX = clickPosition.x;
+                          relativeY = clickPosition.y;
+                      }
+                      
                       
                       // todowawa: hover shape
                       // todowawa: shift for right angles and 45 degrees? (optional for now)
                       // todowawa: ctrl to snap to edges?
-                      // todowawa: ctrl + shift to snap to edges and corners? (priorities to corners)
-                      // todowawa: find a point really close if possible. Else take the clicked point for now...
+                      // todowawa: ctrl + shift should be to snap to edge and right angles / 45 degrees -> chain the 2 calls of points
+                      // todowawa: alt to snap to corners???
                       lastX = relativeX;
                       lastY = relativeY;
                       
@@ -327,6 +343,8 @@
 							  if(distance > 6)
 							  {
 								  floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
+                                  
+                                  //alert(relativeX + " " + relativeY);
 							  }
 							  else
 							  {
@@ -338,7 +356,7 @@
 								  
 								  $(document).keyup(function(e)
 				                  {
-								      if(floorPlan.wallChains[floorPlan.wallChains.length - 1].points.length > 1 && e.which == 27)
+								      if(floorPlan.wallChains.length != 0 && floorPlan.wallChains[floorPlan.wallChains.length - 1].points.length > 1 && e.which == 27)
 									  {
 									      // create another wall chain
 										  var chain = new WallChain();
@@ -353,6 +371,7 @@
 						  else
 						  {
 							  floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
+                              //alert(relativeX + " " + relativeY);
 						  }					  
 					  }
 					  else
@@ -373,24 +392,116 @@
                 });
 
                 $("#planCanvas").mousemove(function(e) {
-                      if(lastX > 0 && lastY < 0)
-                      {
-                          context.clearRect(0, 0, $("#planCanvas").width(), $("#planCanvas").height());
-                          context.drawImage(plan, 0, 0);
-                          
-                          floorPlan.draw(context);
-                          
-                          drawArc(lastX, lastY * -1, context);
-                          var offset = $(this).offset();
-                          var relativeX = (e.pageX - offset.left);
-                          var relativeY = (offset.top - e.pageY) * -1;
+                                
+                    var offset = $(this).offset();
+                    var relativeX = (e.pageX - offset.left);
+                    var relativeY = (offset.top - e.pageY) * -1;
 
-                          context.beginPath();
-                          context.moveTo(lastX,lastY * -1);
-                          context.lineTo(relativeX,relativeY);
-                          context.strokeStyle = 'blue';
-                          context.stroke();
-                      }
+                    context.clearRect(0, 0, $("#planCanvas").width(), $("#planCanvas").height());                      
+                    context.drawImage(plan, 0, 0);
+                    floorPlan.draw(context);
+                       
+                    if(e.shiftKey)
+                    {
+                        if(drawingExterior)
+                        {
+                            if(floorPlan.exteriorWallChain.points.length > 0)
+                            {
+                                if(guideLines == null || guideLines.wallPoint != floorPlan.exteriorWallChain.points[floorPlan.exteriorWallChain.points.length - 1])
+                                {
+                                    guideLines = new GuideLines(floorPlan.exteriorWallChain.points[floorPlan.exteriorWallChain.points.length - 1]);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if(floorPlan.wallChains.length > 0)
+                            {
+                                if(floorPlan.wallChains[floorPlan.wallChains.length - 1].points.length > 0)
+                                {
+                                    var wallChain = floorPlan.wallChains[floorPlan.wallChains.length - 1];
+                                    if(guideLines == null || guideLines.wallPoint != wallChain.points[wallChain.points.length - 1])
+                                    {
+                                        guideLines = new GuideLines(wallChain.points[wallChain.points.length - 1]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                       
+                    var newPoint = null;
+                    
+                    if(e.ctrlKey && e.shiftKey)
+                    {
+                        // todowawa:
+                        // 1. get closest shift line (getClosestPoint should return the concerned parametric line)
+                        // 2. intersect with all the parametric lines from the walls and take the closest one if under a specific value (15 or something)
+                        
+                        //todowawa: show the guides (parametric lines) in light gray or something. Have guides for stuff perpendicular to points.
+                    }
+                    else if(e.ctrlKey)
+                    {
+                        newPoint = floorPlan.getClosestPoint(relativeX, relativeY * -1, 15);
+                    }
+                    else if(e.shiftKey)
+                    {
+                        if(guideLines != null && lastX > 0 && lastY < 0)
+                        {
+                            newPoint = guideLines.getClosestPoint(relativeX, relativeY * -1, 15);
+                        }
+                    }
+                    
+                    if(newPoint != null)
+                    {
+                        clickPosition = newPoint;
+                        
+                        relativeX = clickPosition.x;
+                        relativeY = clickPosition.y * -1;
+                        
+                        context.beginPath();
+                        context.lineWidth = "2";
+                        context.moveTo(newPoint.x, newPoint.y * -1 - 5);
+                        context.lineTo(newPoint.x, newPoint.y * -1 + 5);
+                        context.strokeStyle = 'green';
+                        context.stroke();
+                          
+                        context.beginPath();
+                        context.lineWidth = "2";
+                        context.moveTo(newPoint.x - 5, newPoint.y * -1);
+                        context.lineTo(newPoint.x + 5, newPoint.y * -1);
+                        context.strokeStyle = 'green';
+                        context.stroke();
+                    }
+                    else
+                    {
+                        clickPosition = null;
+                        context.beginPath();
+                        context.lineWidth = "2";
+                        context.moveTo(relativeX, relativeY - 5);
+                        context.lineTo(relativeX, relativeY + 5);
+                        context.strokeStyle = 'green';
+                        context.stroke();
+                         
+                        context.beginPath();
+                        context.lineWidth = "2";
+                        context.moveTo(relativeX - 5, relativeY);
+                        context.lineTo(relativeX + 5, relativeY);
+                        context.strokeStyle = 'green';
+                        context.stroke();
+                    }
+                       
+                       
+                    if(lastX > 0 && lastY < 0)
+                    {
+                        drawArc(lastX, lastY * -1, context);
+
+                        context.lineWidth = "1";
+                        context.beginPath();
+                        context.moveTo(lastX,lastY * -1);
+                        context.lineTo(relativeX,relativeY);
+                        context.strokeStyle = 'blue';
+                        context.stroke();
+                    }
                 });
               };
             }

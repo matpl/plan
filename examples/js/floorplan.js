@@ -1,9 +1,39 @@
 function drawArc(x, y, context, color)
 {
+    context.lineWidth = "1";
     context.beginPath();
     context.arc(x, y, 3, 0, 2 * Math.PI, false);
     context.fillStyle = color;
     context.fill();
+}
+
+function ParametricLine(x0, y0, x1, y1)
+{
+    this.x0 = x0;
+    this.y0 = y0;
+    this.x1 = x1;
+    this.y1 = y1;
+    
+    this.y0my1 = this.y0 - this.y1;
+    this.y1my0 = this.y1 - this.y0;
+    this.x1mx0 = this.x1 - this.x0;
+    this.x0y1 = this.x0 * this.y1;
+    this.x1y0 = this.x1 * this.y0;
+    this.norm = Math.sqrt(Math.pow(this.x1 - this.x0, 2) + Math.pow(this.y1 - this.y0, 2));
+    this.normPow = Math.pow(this.x1 - this.x0, 2) + Math.pow(this.y1 - this.y0, 2);
+    
+    this.getClosestPoint = function(x, y)
+    {
+        var dist = Math.abs((this.y0my1 * x + this.x1mx0 * y + (this.x0y1 - this.x1y0))) / this.norm;
+        
+        // scalar projection:
+        var scalar = (this.x1mx0 * (x - this.x0) + this.y1my0 * (y - this.y0)) / this.normPow;
+        
+        var newX = scalar * this.x1mx0 + this.x0;
+        var newY = scalar * this.y1my0 + this.y0;
+         
+        return {x: newX, y: newY, distance: dist};
+    }
 }
 
 function WallPoint(x, y)
@@ -22,6 +52,7 @@ function WallChain()
         {
 			drawArc(this.points[0].x,this.points[0].y * -1, context, 'blue');
 			
+            context.lineWidth = "1";
 			context.beginPath();
 			context.moveTo(this.points[0].x, this.points[0].y * -1);
 			for(i = 1; i < this.points.length; i++)
@@ -41,6 +72,37 @@ function WallChain()
 			}
 		}
 	}
+    
+    this.getClosestPoint = function(x, y, closestDistance)
+    {
+        var closestPoint = null;
+        for(var i = 0; i < this.points.length - 1; i++)
+        {
+            //todowawa: this should be saved when a point  is added/removed/modified or something
+            var x0 = this.points[i].x;
+            var y0 = this.points[i].y;
+            
+            var x1 = this.points[i + 1].x;
+            var y1 = this.points[i + 1].y;
+            
+            var dist = Math.abs(((y0 - y1) * x + (x1 - x0) * y + (x0 * y1 - x1 * y0))) / Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
+            
+            if(dist <= closestDistance)
+            {
+                if(closestPoint == null || dist < closestPoint.distance)
+                {
+                    var scalar = ((x1 - x0) * (x - x0) + (y1 - y0) * (y - y0)) / (Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
+                 
+                    var newX = scalar * (x1 - x0) + x0;
+                    var newY = scalar * (y1 - y0) + y0;
+                    
+                    closestPoint = {x: newX, y: newY, distance : dist};   
+                }
+            }
+        }
+        
+        return closestPoint;
+    }
 }
 
 function FloorPlan()
@@ -57,6 +119,25 @@ function FloorPlan()
 			//todowawa : draw walls her. Other  color perhaps?	
 			this.wallChains[i].draw(context);
 		}
+    }
+    
+    this.getClosestPoint = function(x, y, closestDistance)
+    {
+        var point = this.exteriorWallChain.getClosestPoint(x, y, closestDistance);
+        
+        if(point == null)
+        {
+            for(var i = 0; i < this.wallChains.length; i++)
+            {
+                point = this.wallChains[i].getClosestPoint(x, y, closestDistance);
+                if(point != null)
+                {
+                    return point;
+                }
+            }
+        }
+        
+        return point;
     }
 }
 
@@ -197,6 +278,32 @@ function ThreePlan(floorPlan)
 		rectMesh.position.y = -50;
 		scene.add( rectMesh );
 	}
+}
+
+function GuideLines(wallPoint)
+{
+    this.wallPoint = wallPoint;
+    
+    this.parametricLines = [];
+    this.parametricLines.push(new ParametricLine(wallPoint.x, wallPoint.y, wallPoint.x + 1, wallPoint.y));
+    this.parametricLines.push(new ParametricLine(wallPoint.x, wallPoint.y, wallPoint.x, wallPoint.y + 1));
+    this.parametricLines.push(new ParametricLine(wallPoint.x, wallPoint.y, wallPoint.x + 1, wallPoint.y + 1));
+    this.parametricLines.push(new ParametricLine(wallPoint.x, wallPoint.y, wallPoint.x + 1, wallPoint.y - 1));
+    
+    this.getClosestPoint = function(x, y)
+    {
+        var closestPoint = null;
+        for(var i = 0; i < this.parametricLines.length; i++)
+        {
+            var point = this.parametricLines[i].getClosestPoint(x, y);
+            if(i == 0 || point.distance < closestPoint.distance)
+            {
+                closestPoint = point;
+            }
+        }
+        
+        return closestPoint;
+    }
 }
 
 var floorPlan = new FloorPlan();
