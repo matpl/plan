@@ -22,17 +22,28 @@ function ParametricLine(x0, y0, x1, y1)
     this.norm = Math.sqrt(Math.pow(this.x1 - this.x0, 2) + Math.pow(this.y1 - this.y0, 2));
     this.normPow = Math.pow(this.x1 - this.x0, 2) + Math.pow(this.y1 - this.y0, 2);
     
-    this.getClosestPoint = function(x, y)
-    {
+    this.getClosestPoint = function(x, y, closestDistance)
+    {        
         var dist = Math.abs((this.y0my1 * x + this.x1mx0 * y + (this.x0y1 - this.x1y0))) / this.norm;
         
-        // scalar projection:
-        var scalar = (this.x1mx0 * (x - this.x0) + this.y1my0 * (y - this.y0)) / this.normPow;
+        if(typeof closestDistance === 'undefined' || dist <= closestDistance)
+        {
+            // scalar projection:
+            var scalar = (this.x1mx0 * (x - this.x0) + this.y1my0 * (y - this.y0)) / this.normPow;
         
-        var newX = scalar * this.x1mx0 + this.x0;
-        var newY = scalar * this.y1my0 + this.y0;
+            var newX = scalar * this.x1mx0 + this.x0;
+            var newY = scalar * this.y1my0 + this.y0;
          
-        return {x: newX, y: newY, distance: dist};
+            return {x: newX, y: newY, distance: dist};
+        }
+        else
+        {
+            return null;
+        }
+    }
+    
+    this.draw = function(context)
+    {
     }
 }
 
@@ -45,7 +56,38 @@ function WallPoint(x, y)
 function WallChain()
 {
     this.points = [];
-	
+    this.parametricLines = [];
+    
+    this.pointPushed = function()
+    {
+        if(this.points.length > 1)
+        {
+            this.parametricLines.push(new ParametricLine(this.points[this.points.length - 2].x, this.points[this.points.length - 2].y, this.points[this.points.length - 1].x, this.points[this.points.length - 1].y));
+            
+            // add two perpendicular parametric if the points are not
+            if(this.points[this.points.length - 2].x != this.points[this.points.length - 1].x)
+            {
+                this.parametricLines.push(new ParametricLine(this.points[this.points.length - 1].x, this.points[this.points.length - 1].y, this.points[this.points.length - 1].x + 1, this.points[this.points.length - 1].y));
+            }
+            if(this.points[this.points.length - 2].y != this.points[this.points.length - 1].y)
+            {
+                this.parametricLines.push(new ParametricLine(this.points[this.points.length - 1].x, this.points[this.points.length - 1].y, this.points[this.points.length - 1].x, this.points[this.points.length - 1].y + 1));
+            }
+        }
+        else if(this.points.length == 1)
+        {
+            this.parametricLines.push(new ParametricLine(this.points[0].x, this.points[0].y, this.points[0].x + 1, this.points[0].y));
+            this.parametricLines.push(new ParametricLine(this.points[0].x, this.points[0].y, this.points[0].x, this.points[0].y + 1));
+        }
+    }
+    
+    // todowawa : also have a removed and a modified event or something
+    this.addPoint = function(point)
+    {
+        this.points.push(point);
+        this.pointPushed();
+    }
+    
 	this.draw = function(context)
 	{
 		if(this.points.length  > 0)
@@ -76,28 +118,12 @@ function WallChain()
     this.getClosestPoint = function(x, y, closestDistance)
     {
         var closestPoint = null;
-        for(var i = 0; i < this.points.length - 1; i++)
+        for(var i = 0; i < this.parametricLines.length; i++)
         {
-            //todowawa: this should be saved when a point  is added/removed/modified or something
-            var x0 = this.points[i].x;
-            var y0 = this.points[i].y;
-            
-            var x1 = this.points[i + 1].x;
-            var y1 = this.points[i + 1].y;
-            
-            var dist = Math.abs(((y0 - y1) * x + (x1 - x0) * y + (x0 * y1 - x1 * y0))) / Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
-            
-            if(dist <= closestDistance)
+            var point = this.parametricLines[i].getClosestPoint(x, y, closestDistance);
+            if(point != null && (closestPoint == null || point.distance < closestPoint.distance))
             {
-                if(closestPoint == null || dist < closestPoint.distance)
-                {
-                    var scalar = ((x1 - x0) * (x - x0) + (y1 - y0) * (y - y0)) / (Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
-                 
-                    var newX = scalar * (x1 - x0) + x0;
-                    var newY = scalar * (y1 - y0) + y0;
-                    
-                    closestPoint = {x: newX, y: newY, distance : dist};   
-                }
+                closestPoint = point;
             }
         }
         
@@ -280,6 +306,7 @@ function ThreePlan(floorPlan)
 	}
 }
 
+//todowawa: i don't think this is useful anymore since we have it on CTRL
 function GuideLines(wallPoint)
 {
     this.wallPoint = wallPoint;

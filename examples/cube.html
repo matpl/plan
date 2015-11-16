@@ -342,14 +342,14 @@
 							  var distance = Math.sqrt(Math.pow(floorPlan.exteriorWallChain.points[0].x - relativeX, 2) + Math.pow(floorPlan.exteriorWallChain.points[0].y - relativeY, 2));
 							  if(distance > 6)
 							  {
-								  floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
+								  floorPlan.exteriorWallChain.addPoint(new WallPoint(relativeX, relativeY));
                                   
                                   //alert(relativeX + " " + relativeY);
 							  }
 							  else
 							  {
 								  // the contour is done
-								  floorPlan.exteriorWallChain.points.push(floorPlan.exteriorWallChain.points[0]);
+								  floorPlan.exteriorWallChain.addPoint(floorPlan.exteriorWallChain.points[0]);
 								  lastX = -1;
 								  lastY = 1;
 								  drawingExterior = false;
@@ -370,7 +370,7 @@
 						  }
 						  else
 						  {
-							  floorPlan.exteriorWallChain.points.push(new WallPoint(relativeX, relativeY));
+							  floorPlan.exteriorWallChain.addPoint(new WallPoint(relativeX, relativeY));
                               //alert(relativeX + " " + relativeY);
 						  }					  
 					  }
@@ -381,7 +381,7 @@
 							var chain = new WallChain();
 							floorPlan.wallChains.push(chain);
 						  }
-						  floorPlan.wallChains[floorPlan.wallChains.length - 1].points.push(new WallPoint(relativeX, relativeY));
+						  floorPlan.wallChains[floorPlan.wallChains.length - 1].addPoint(new WallPoint(relativeX, relativeY));
 					      
 					  }
                       
