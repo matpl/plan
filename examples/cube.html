@@ -330,8 +330,7 @@
                       // todowawa: hover shape
                       // todowawa: shift for right angles and 45 degrees? (optional for now)
                       // todowawa: ctrl to snap to edges?
-                      // todowawa: ctrl + shift should be to snap to edge and right angles / 45 degrees -> chain the 2 calls of points
-                      // todowawa: alt to snap to corners???
+                      // todowawa: shift should be to snap to parametric line intersections
                       lastX = relativeX;
                       lastY = relativeY;
                       
@@ -360,7 +359,7 @@
 									  {
 									      // create another wall chain
 										  var chain = new WallChain();
-										  floorPlan.wallChains.push(chain);
+										  floorPlan.addWallChain(chain);
 										  lastX = -1;
 							              lastY = 1;
 										  redraw();
@@ -379,7 +378,7 @@
 					      if(floorPlan.wallChains.length == 0)
 						  {
 							var chain = new WallChain();
-							floorPlan.wallChains.push(chain);
+							floorPlan.addWallChain(chain);
 						  }
 						  floorPlan.wallChains[floorPlan.wallChains.length - 1].addPoint(new WallPoint(relativeX, relativeY));
 					      
@@ -438,6 +437,8 @@
                         // 2. intersect with all the parametric lines from the walls and take the closest one if under a specific value (15 or something)
                         
                         //todowawa: show the guides (parametric lines) in light gray or something. Have guides for stuff perpendicular to points.
+                        
+                        newPoint = floorPlan.getClosestPoint(relativeX, relativeY * -1, 15, true);
                     }
                     else if(e.ctrlKey)
                     {

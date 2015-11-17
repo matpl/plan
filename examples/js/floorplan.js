@@ -42,6 +42,27 @@ function ParametricLine(x0, y0, x1, y1)
         }
     }
     
+    this.getIntersection = function(parametricLine)
+    {
+        //http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+        var r = {x: this.x1 - this.x0, y: this.y1 - this.y0};
+        var s = {x: parametricLine.x1 - parametricLine.x0, y: parametricLine.y1 - parametricLine.y0};
+        var res = r.x * s.y - r.y * s.x;
+        if(res == 0)
+        {
+            // lines are parallel
+            return null;
+        }
+        else
+        {
+            var t = (parametricLine.x0 - this.x0) * s.y - (parametricLine.y0 - this.y0)  * s.x / res;
+            //var u = (parametricLine.x0 - this.x0) * r.y - (parametricLine.y0 - this.y0)  * r.x / res;
+            
+            return {x: this.x0 + t*r.x, y: this.y0 + t*r.y};
+        }
+        
+    }
+    
     this.draw = function(context)
     {
     }
@@ -55,29 +76,49 @@ function WallPoint(x, y)
 
 function WallChain()
 {
+    this.handlers = [];
     this.points = [];
     this.parametricLines = [];
+    
+    this.addParametricLine = function(x0, y0, x1, y1)
+    {
+        var parametricLine = new ParametricLine(x0, y0, x1, y1);
+        this.parametricLines.push(parametricLine);
+        this.fire({type: 'add', object: parametricLine});
+    }
     
     this.pointPushed = function()
     {
         if(this.points.length > 1)
         {
-            this.parametricLines.push(new ParametricLine(this.points[this.points.length - 2].x, this.points[this.points.length - 2].y, this.points[this.points.length - 1].x, this.points[this.points.length - 1].y));
+            //todowawa: NOT SURE FOR 45 DEGREES... show the guide lines and see if it's useful
+            this.addParametricLine(this.points[this.points.length - 2].x, this.points[this.points.length - 2].y, this.points[this.points.length - 1].x, this.points[this.points.length - 1].y);
             
             // add two perpendicular parametric if the points are not
-            if(this.points[this.points.length - 2].x != this.points[this.points.length - 1].x)
-            {
-                this.parametricLines.push(new ParametricLine(this.points[this.points.length - 1].x, this.points[this.points.length - 1].y, this.points[this.points.length - 1].x + 1, this.points[this.points.length - 1].y));
-            }
             if(this.points[this.points.length - 2].y != this.points[this.points.length - 1].y)
             {
-                this.parametricLines.push(new ParametricLine(this.points[this.points.length - 1].x, this.points[this.points.length - 1].y, this.points[this.points.length - 1].x, this.points[this.points.length - 1].y + 1));
+                this.addParametricLine(this.points[this.points.length - 1].x, this.points[this.points.length - 1].y, this.points[this.points.length - 1].x + 1, this.points[this.points.length - 1].y);
+            }
+            if(this.points[this.points.length - 2].x != this.points[this.points.length - 1].x)
+            {
+                this.addParametricLine(this.points[this.points.length - 1].x, this.points[this.points.length - 1].y, this.points[this.points.length - 1].x, this.points[this.points.length - 1].y + 1);
+            }
+            if(this.points[this.points.length - 2].x - this.points[this.points.length - 1].x != this.points[this.points.length - 2].y - this.points[this.points.length - 1].y)
+            {
+                this.addParametricLine(this.points[this.points.length - 1].x, this.points[this.points.length - 1].y, this.points[this.points.length - 1].x + 1, this.points[this.points.length - 1].y + 1);
+            }
+            if(this.points[this.points.length - 2].x - this.points[this.points.length - 1].x != this.points[this.points.length - 1].y - this.points[this.points.length - 2].y)
+            {
+                this.addParametricLine(this.points[this.points.length - 1].x, this.points[this.points.length - 1].y, this.points[this.points.length - 1].x + 1, this.points[this.points.length - 1].y - 1);
             }
         }
         else if(this.points.length == 1)
         {
-            this.parametricLines.push(new ParametricLine(this.points[0].x, this.points[0].y, this.points[0].x + 1, this.points[0].y));
-            this.parametricLines.push(new ParametricLine(this.points[0].x, this.points[0].y, this.points[0].x, this.points[0].y + 1));
+            this.addParametricLine(this.points[0].x, this.points[0].y, this.points[0].x + 1, this.points[0].y);
+            this.addParametricLine(this.points[0].x, this.points[0].y, this.points[0].x, this.points[0].y + 1);
+            
+            this.addParametricLine(this.points[0].x, this.points[0].y, this.points[0].x + 1, this.points[0].y + 1);
+            this.addParametricLine(this.points[0].x, this.points[0].y, this.points[0].x + 1, this.points[0].y - 1);
         }
     }
     
@@ -131,10 +172,75 @@ function WallChain()
     }
 }
 
+var observerPrototype = {
+ 
+    subscribe: function(fn, s) {
+        this.handlers.push({func: fn, scope: s});
+    },
+ 
+    unsubscribe: function(fn) {
+        this.handlers = this.handlers.filter(
+            function(item) {
+                if (item.func !== fn) {
+                    return item;
+                }
+            }
+        );
+    },
+ 
+    fire: function(o, thisObj) {
+        var scope = thisObj || window;
+        this.handlers.forEach(function(item) {
+            item.func.call(item.scope, o);
+        });
+    }
+};
+
+WallChain.prototype = observerPrototype;
+
 function FloorPlan()
 {
     this.exteriorWallChain = new WallChain();
     this.wallChains = [];
+    this.parametricIntersections = [];
+    
+    var fn = function(item)
+    {
+        if(item.type == 'add')
+        {
+            //todowawa: have a way to remove them if we remove the lines
+            for(var i = 0; i < this.exteriorWallChain.parametricLines.length; i++)
+            {
+                //todowawa: if we already did a collinear line, simply skip it... we shouldnt add any collinear line in the first place
+                var point = this.exteriorWallChain.parametricLines[i].getIntersection(item.object);
+                if(point != null)
+                {
+                    this.parametricIntersections.push(point);
+                }
+            }
+            
+            for(var j = 0; j < this.wallChains.length; j++)
+            {
+                for(var i = 0; i < this.wallChains[j].parametricLines.length; i++)
+                {
+                    //todowawa: if we already did a collinear line, simply skip it... we shouldnt add any collinear line in the first place
+                    var point = this.wallChains[j].parametricLines[i].getIntersection(item.object);
+                    if(point != null)
+                    {
+                        this.parametricIntersections.push(point);
+                    }
+                }
+            }
+        }
+    };
+    
+    this.exteriorWallChain.subscribe(fn, this);
+    
+    this.addWallChain = function(wallChain)
+    {
+        this.wallChains.push(wallChain);
+        wallChain.subscribe(fn, this);
+    }
     
     this.draw = function(context)
     {
@@ -142,28 +248,45 @@ function FloorPlan()
 		
 		for(var i = 0; i < this.wallChains.length; i++)
 		{
-			//todowawa : draw walls her. Other  color perhaps?	
+			//todowawa : draw walls here. Other  color perhaps?	
 			this.wallChains[i].draw(context);
 		}
     }
     
-    this.getClosestPoint = function(x, y, closestDistance)
+    this.getClosestPoint = function(x, y, closestDistance, snapToInter)
     {
-        var point = this.exteriorWallChain.getClosestPoint(x, y, closestDistance);
+        snapToInter = (typeof snapToInter === 'undefined') ? false : snapToInter;
+        var closestPoint = this.exteriorWallChain.getClosestPoint(x, y, closestDistance);
         
-        if(point == null)
+        for(var i = 0; i < this.wallChains.length; i++)
         {
-            for(var i = 0; i < this.wallChains.length; i++)
+            var point = this.wallChains[i].getClosestPoint(x, y, closestDistance);
+            
+            if(point != null && (closestPoint == null || point.distance < closestPoint.distance))
             {
-                point = this.wallChains[i].getClosestPoint(x, y, closestDistance);
-                if(point != null)
-                {
-                    return point;
-                }
+                closestPoint = point;
             }
         }
         
-        return point;
+        if(snapToInter)
+        {
+            var closestInter = null;
+            for(var i = 0; i < this.parametricIntersections.length; i++)
+            {
+                var dist = Math.sqrt(Math.pow(this.parametricIntersections[i].x - x,2) + Math.pow(this.parametricIntersections[i].y - y,2));
+                if(dist <= closestDistance && (closestInter == null || dist < closestInter.distance))
+                {
+                    closestInter = {x: this.parametricIntersections[i].x, y: this.parametricIntersections[i].y, distance: dist};
+                }
+            }   
+            
+            if(closestInter != null)
+            {
+                closestPoint = closestInter;
+            }
+        }
+        
+        return closestPoint;
     }
 }
 
