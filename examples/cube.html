@@ -443,6 +443,8 @@
                     else if(e.ctrlKey)
                     {
                         newPoint = floorPlan.getClosestPoint(relativeX, relativeY * -1, 15);
+						
+                        floorPlan.drawGuides(context, $("#planCanvas").width(), $("#planCanvas").height());
                     }
                     else if(e.shiftKey)
                     {
@@ -452,6 +454,7 @@
                         }
                     }
                     
+					
                     if(newPoint != null)
                     {
                         clickPosition = newPoint;
@@ -489,19 +492,22 @@
                         context.lineTo(relativeX + 5, relativeY);
                         context.strokeStyle = 'green';
                         context.stroke();
-                    }
-                       
+                    }                       
                        
                     if(lastX > 0 && lastY < 0)
                     {
                         drawArc(lastX, lastY * -1, context);
 
+						context.save();
+					    context.setLineDash([2, 2]);
+						
                         context.lineWidth = "1";
                         context.beginPath();
                         context.moveTo(lastX,lastY * -1);
                         context.lineTo(relativeX,relativeY);
                         context.strokeStyle = 'blue';
                         context.stroke();
+						context.restore();
                     }
                 });
               };

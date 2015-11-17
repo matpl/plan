@@ -63,8 +63,67 @@ function ParametricLine(x0, y0, x1, y1)
         
     }
     
-    this.draw = function(context)
+    this.getDrawLinePoint = function(x2, y2, x3, y3, width, height)
     {
+        var s = ((x3 - x2) * (y2 - this.y0) - (x2 - this.x0) * (y3 - y2)) / ((x3 - x2) * (this.y1 - this.y0) - (this.x1 - this.x0) * (y3 - y2));
+        var t = ((this.x1 - this.x0) * (y2 - this.y0) - (x2 - this.x0) * (this.y1 - this.y0)) / ((x3 - x2) * (this.y1 - this.y0) - (this.x1 - this.x0) * (y3 - y2));
+        
+        if (isFinite(s) && isFinite(t))
+        {
+            var x = (x3 - x2) * t + x2;
+            var y = (y3 - y2) * t + y2;
+            //todowawa: for some reason i have to multiply by -1 in two cases... wtf is this
+            //y = y * -1;
+            if(x >= 0 && y >= 0 && x <= width && y <= height)
+            {
+                return {x: x, y: y};
+            }
+        }
+        
+        return null;
+    }
+    
+    this.drawnLine = null;
+    this.draw = function(context, width, height)
+    {
+		// for this we need the boundaries... top left corner is 0,0...
+        if(this.drawnLine == null)
+        {
+            var bounds = [{x2: 0, y2: 0, x3: width, y3: 0}, {x2: 0, y2: 0, x3: 0, y3: height}, {x2: 0, y2: height, x3: width, y3: height}, {x2: width, y2: 0, x3: width, y3: height}];
+            this.drawnLine = [];
+            for(var i = 0; i < bounds.length; i+=2)
+            {
+                var pt = this.getDrawLinePoint(bounds[i].x2, bounds[i].y2, bounds[i].x3, bounds[i].y3, width, height);
+                
+                if(pt != null)
+                {
+                    if(this.drawnLine.length == 0)
+                    {
+                        this.drawnLine.push(pt);
+                    }
+                    else
+                    {
+                        if(this.drawnLine[0].x != pt.x || this.drawnLine[0].y != pt.y)
+                        {
+                            this.drawnLine.push(pt);
+                        }
+                    }
+                    if(this.drawnLine.length == 2)
+                        break;
+                }
+            }
+        }
+        if(this.drawnLine.length == 2)
+        {
+            context.save();
+            context.lineWidth = "1";
+            context.beginPath();
+            context.moveTo(this.drawnLine[0].x, this.drawnLine[0].y);
+            context.lineTo(this.drawnLine[1].x, this.drawnLine[1].y);
+            context.strokeStyle = '#cecece';
+            context.stroke();
+            context.restore();   
+        }
     }
 }
 
@@ -129,6 +188,14 @@ function WallChain()
         this.pointPushed();
     }
     
+    this.drawGuides = function(context, width, height)
+    {
+        for(var i = 0; i < this.parametricLines.length; i++)
+        {
+            this.parametricLines[i].draw(context, width, height);
+        }
+    }
+    
 	this.draw = function(context)
 	{
 		if(this.points.length  > 0)
@@ -151,7 +218,7 @@ function WallChain()
 					{
 						drawArc(this.points[i].x, this.points[i].y * -1, context);   
 					}
-				}
+				} 	
 			}
 		}
 	}
@@ -250,6 +317,16 @@ function FloorPlan()
 		{
 			//todowawa : draw walls here. Other  color perhaps?	
 			this.wallChains[i].draw(context);
+		}
+    }
+    
+    this.drawGuides = function(context, width, height)
+    {
+        this.exteriorWallChain.drawGuides(context, width, height);
+		
+		for(var i = 0; i < this.wallChains.length; i++)
+		{
+			this.wallChains[i].drawGuides(context, width, height);
 		}
     }
     
