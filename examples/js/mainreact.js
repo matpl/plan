@@ -88,7 +88,106 @@ var CommentForm = React.createClass({
    }   
 });
 
+
+var Graphic = React.createClass({ 
+
+  componentDidMount: function() {
+    var context = this.getDOMNode().getContext('2d');
+    this.paint(context);
+  },
+
+  componentDidUpdate: function() {
+    var context = this.getDOMNode().getContext('2d');
+    context.clearRect(0, 0, 200, 200);
+    this.paint(context);
+  },
+
+  paint: function(context) {
+    context.save();
+    context.translate(100, 100);
+    context.rotate(this.props.rotation, 100, 100);
+    context.fillStyle = '#F00';
+    context.fillRect(-50, -50, 100, 100);
+    context.restore();
+  },
+
+  render: function() {
+      console.error('render', 'render', 'render');
+    return <canvas width={200} height={200} id={this.props.rotation} />;
+  }
+
+});
+
+var App = React.createClass({
+
+  getInitialState: function() {
+    return { rotation: 0 };
+  },
+
+  componentDidMount: function() {
+    requestAnimationFrame(this.tick);
+  },
+
+  tick: function() {
+    this.setState({ rotation: this.state.rotation + .01 });
+    requestAnimationFrame(this.tick);
+  },
+
+  render: function() {
+    return <div><Graphic rotation={this.state.rotation} /></div>
+  }
+
+});
+
+
+var MainComponent = React.createClass({
+   render: function()
+   {
+       return <div>
+                <CanvasComponent />
+                <DropZoneComponent />
+              </div>;
+   }
+});
+
+var DropZoneComponent = React.createClass({
+   onDragOver: function(e)
+   {
+     e.stopPropagation();
+     e.preventDefault();
+     e.dataTransfer.dropEffect = 'copy';
+   },
+   onDrop: function(e)
+   {
+     e.stopPropagation();
+     e.preventDefault();
+   },
+   render: function()
+   {
+       return <div onDragOver={this.onDragOver} onDrop={this.onDrop}>{"Drop files here"}</div>;
+   }
+});
+
+var CanvasComponent = React.createClass({
+   onMouseMove : function(e)
+   {
+     var offset =  $(this.getDOMNode()).offset();
+     var relativeX = (e.pageX - offset.left);
+     var relativeY = (offset.top - e.pageY) * -1;
+
+     //context.clearRect(0, 0, $("#planCanvas").width(), $("#planCanvas").height());                      
+     //context.drawImage(plan, 0, 0);
+     //floorPlan.draw(context);
+     alert(relativeX + " " + relativeY);  
+   },
+   render: function()
+   {
+       return <canvas ref="planCanvas" width={500} height={500} onMouseMove={this.onMouseMove} />;
+   }   
+    
+});
+
 ReactDOM.render(
-  <CommentList url='js/api/comments' pollInterval={2000} />,
+  <MainComponent />,
   document.getElementById('example')
 );
