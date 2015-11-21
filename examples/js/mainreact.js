@@ -3,6 +3,9 @@ var $ = require('jquery');
 var React = require('react');
 var ReactDOM = require('react-dom');
 
+
+//todowawa: check bootstrap!!!
+
 var CommentList = React.createClass({
   getInitialState: function() {
       return {stuff: []};
@@ -161,6 +164,17 @@ var DropZoneComponent = React.createClass({
    {
      e.stopPropagation();
      e.preventDefault();
+     
+     var files = e.dataTransfer.files;
+     for (var i = 0; i < files.length; i++)
+     {
+       if (!files[i].type.match('image.*'))
+       {
+         continue;
+       }
+       //todowawa: transfer this to the top as a state or something
+       alert(URL.createObjectURL(files[i]));
+     }
    },
    render: function()
    {
@@ -169,20 +183,64 @@ var DropZoneComponent = React.createClass({
 });
 
 var CanvasComponent = React.createClass({
+   mousePosition : {x : -1, y : -1},
+   
+   onClick : function(e)
+   {
+       //this.wawa = this.wawa + 1;
+       //alert(this.wawa);
+   },
    onMouseMove : function(e)
    {
-     var offset =  $(this.getDOMNode()).offset();
+     var offset =  $(this.refs.planCanvas).offset();
      var relativeX = (e.pageX - offset.left);
      var relativeY = (offset.top - e.pageY) * -1;
+     
+     // compute the best mousePosition with snapping
+     this.mousePosition.x = relativeX;
+     this.mousePosition.y = relativeY;
+     
+     this.context.save();
+     this.context.strokeStyle = 'green';
+     this.context.beginPath();
+     this.context.moveTo(this.mousePosition.x - 5, this.mousePosition.y);
+     this.context.lineTo(this.mousePosition.x + 5, this.mousePosition.y);
+     this.context.stroke();
+     this.context.beginPath();
+     this.context.moveTo(this.mousePosition.x, this.mousePosition.y - 5);
+     this.context.lineTo(this.mousePosition.x, this.mousePosition.y + 5);
+     this.context.stroke();
+     this.context.restore();
+     
+     this.contextBackground.save();
+     this.contextBackground.strokeStyle = 'red';
+     this.contextBackground.beginPath();
+     this.contextBackground.moveTo(this.mousePosition.x - 5 + 5, this.mousePosition.y + 5);
+     this.contextBackground.lineTo(this.mousePosition.x + 5 + 5, this.mousePosition.y + 5);
+     this.contextBackground.stroke();
+     this.contextBackground.beginPath();
+     this.contextBackground.moveTo(this.mousePosition.x+5, this.mousePosition.y - 5+5);
+     this.contextBackground.lineTo(this.mousePosition.x+5, this.mousePosition.y + 5+5);
+     this.contextBackground.stroke();
+     this.contextBackground.restore();
+     
+     //todowawa: have 2 canvases that overlap each other
 
      //context.clearRect(0, 0, $("#planCanvas").width(), $("#planCanvas").height());                      
      //context.drawImage(plan, 0, 0);
      //floorPlan.draw(context);
-     alert(relativeX + " " + relativeY);  
+   },
+   componentDidMount: function()
+   {
+     this.context = this.refs.planCanvas.getContext("2d");  
+     this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
    },
    render: function()
    {
-       return <canvas ref="planCanvas" width={500} height={500} onMouseMove={this.onMouseMove} />;
+       return <div className="canvasContainer" style={{width: 500 + "px", height: 500 + "px"}}>
+                <canvas ref="backgroundCanvas" width={500} height={500} style={{width: 500 + "px", height: 500 + "px"}} />
+                <canvas ref="planCanvas" width={500} height={500} style={{width: 500 + "px", height: 500 + "px"}} onMouseMove={this.onMouseMove} onClick={this.onClick} />
+              </div>;
    }   
     
 });
