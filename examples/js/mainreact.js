@@ -5,6 +5,8 @@ var ReactDOM = require('react-dom');
 
 
 //todowawa: check bootstrap!!!
+//todowawa: beware of automatic semi colon insertion, so put every curly brace on the same lineHeight
+//todowawa: convert 4 spaces to 2 spaces
 
 var CommentList = React.createClass({
   getInitialState: function() {
@@ -144,11 +146,19 @@ var App = React.createClass({
 
 
 var MainComponent = React.createClass({
+   getInitialState: function()
+   {
+        return {image: null};
+   },
+   setImage: function(url)
+   {
+     this.setState({image: url});  
+   },
    render: function()
    {
        return <div>
-                <CanvasComponent />
-                <DropZoneComponent />
+                <CanvasComponent image={this.state.image} />
+                <DropZoneComponent setImage={this.setImage} />
               </div>;
    }
 });
@@ -166,14 +176,17 @@ var DropZoneComponent = React.createClass({
      e.preventDefault();
      
      var files = e.dataTransfer.files;
-     for (var i = 0; i < files.length; i++)
+     if(files.length == 1)
      {
-       if (!files[i].type.match('image.*'))
+       for (var i = 0; i < files.length; i++)
        {
-         continue;
+         if (!files[i].type.match('image.*'))
+         {
+           continue;
+         }
+       
+         this.props.setImage(URL.createObjectURL(files[i]));
        }
-       //todowawa: transfer this to the top as a state or something
-       alert(URL.createObjectURL(files[i]));
      }
    },
    render: function()
@@ -184,11 +197,13 @@ var DropZoneComponent = React.createClass({
 
 var CanvasComponent = React.createClass({
    mousePosition : {x : -1, y : -1},
-   
+   width: 500,
+   height: 500,
    onClick : function(e)
    {
        //this.wawa = this.wawa + 1;
        //alert(this.wawa);
+       this.forceUpdate();
    },
    onMouseMove : function(e)
    {
@@ -224,22 +239,47 @@ var CanvasComponent = React.createClass({
      this.contextBackground.stroke();
      this.contextBackground.restore();
      
-     //todowawa: have 2 canvases that overlap each other
-
-     //context.clearRect(0, 0, $("#planCanvas").width(), $("#planCanvas").height());                      
-     //context.drawImage(plan, 0, 0);
-     //floorPlan.draw(context);
+     //todowawa: have 3 canvases that overlap each other
    },
    componentDidMount: function()
    {
      this.context = this.refs.planCanvas.getContext("2d");  
      this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
    },
+   componentDidUpdate: function()
+   {
+     this.context = this.refs.planCanvas.getContext("2d");  
+     this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
+     
+     if(this.loadedImage)
+     {
+         this.contextBackground.clearRect(0, 0, this.refs.backgroundCanvas.width, this.refs.backgroundCanvas.height);
+         this.contextBackground.drawImage(this.loadedImage, 0, 0);
+         this.loadedImage = null;
+     }
+   },
+   shouldComponentUpdate: function(nextProps, nextState) {  
+     if(nextProps.image !== this.props.image)
+     {
+       var img = new Image();
+       img.src = nextProps.image;
+       var imgLoad = function() {
+         this.loadedImage = img;
+         this.width = img.width;
+         this.height = img.height;
+         
+         // only rerender when the image is loaded
+         this.forceUpdate();            
+       }
+       img.onload = imgLoad.bind(this);
+     }
+     return false;
+   },
    render: function()
    {
-       return <div className="canvasContainer" style={{width: 500 + "px", height: 500 + "px"}}>
-                <canvas ref="backgroundCanvas" width={500} height={500} style={{width: 500 + "px", height: 500 + "px"}} />
-                <canvas ref="planCanvas" width={500} height={500} style={{width: 500 + "px", height: 500 + "px"}} onMouseMove={this.onMouseMove} onClick={this.onClick} />
+       return <div className="canvasContainer" style={{width: this.width + "px", height: this.height + "px"}}>
+                <canvas ref="backgroundCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
+                <canvas ref="planCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} onMouseMove={this.onMouseMove} onClick={this.onClick} />
               </div>;
    }   
     
