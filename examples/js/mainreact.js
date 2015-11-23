@@ -3,10 +3,15 @@ var $ = require('jquery');
 var React = require('react');
 var ReactDOM = require('react-dom');
 
-
 //todowawa: check bootstrap!!!
 //todowawa: beware of automatic semi colon insertion, so put every curly brace on the same lineHeight
 //todowawa: convert 4 spaces to 2 spaces
+//todowawa: clear points and walls when image changes
+
+function getDistance(point, point2)
+{
+  return Math.sqrt(Math.pow(point.x - point2.x, 2) + Math.pow(point.y - point2.y, 2));
+}
 
 var CommentList = React.createClass({
   getInitialState: function() {
@@ -148,40 +153,54 @@ var App = React.createClass({
 var MainComponent = React.createClass({
    getInitialState: function()
    {
-        return {image: null};
+        return {image: null, walls: []};
    },
    setImage: function(url)
    {
      this.setState({image: url});  
    },
+   addPoint: function(point)
+   {
+     var newState = $.extend({}, this.state);
+     if(newState.walls.length == 0)
+     {
+         newState.walls.push({id: 1, points: []});
+     }
+     
+     var wall = newState.walls[newState.walls.length - 1];
+     
+     wall.points.push({id: wall.points.length + 1, x: point.x, y: point.y});
+     if(wall.points.length > 1 && wall.points[0].x == wall.points[wall.points.length - 1].x && wall.points[0].y == wall.points[wall.points.length - 1].y)
+     {
+       // contour is done
+       newState.walls.push({id: newState.walls.length + 1, points: []});
+     }
+     
+     this.setState(newState);
+   },
    render: function()
    {
        return <div>
-                <CanvasComponent image={this.state.image} />
+                <CanvasComponent image={this.state.image} walls={this.state.walls} addPoint={this.addPoint} />
                 <DropZoneComponent setImage={this.setImage} />
               </div>;
    }
 });
 
 var DropZoneComponent = React.createClass({
-   onDragOver: function(e)
-   {
+   onDragOver: function(e) {
      e.stopPropagation();
      e.preventDefault();
      e.dataTransfer.dropEffect = 'copy';
    },
-   onDrop: function(e)
-   {
+   onDrop: function(e) {
      e.stopPropagation();
      e.preventDefault();
      
      var files = e.dataTransfer.files;
-     if(files.length == 1)
-     {
-       for (var i = 0; i < files.length; i++)
-       {
-         if (!files[i].type.match('image.*'))
-         {
+     if(files.length == 1) {
+       for (var i = 0; i < files.length; i++) {
+         if (!files[i].type.match('image.*')) {
            continue;
          }
        
@@ -189,8 +208,7 @@ var DropZoneComponent = React.createClass({
        }
      }
    },
-   render: function()
-   {
+   render: function() {
        return <div onDragOver={this.onDragOver} onDrop={this.onDrop}>{"Drop files here"}</div>;
    }
 });
@@ -201,66 +219,95 @@ var CanvasComponent = React.createClass({
    height: 500,
    onClick : function(e)
    {
-       //this.wawa = this.wawa + 1;
-       //alert(this.wawa);
-       this.forceUpdate();
+       this.props.addPoint(this.mousePosition);
    },
    onMouseMove : function(e)
    {
      var offset =  $(this.refs.planCanvas).offset();
      var relativeX = (e.pageX - offset.left);
      var relativeY = (offset.top - e.pageY) * -1;
-     
+    
+     this.contextCursor.clearRect(0, 0, this.refs.cursorCanvas.width, this.refs.cursorCanvas.height);
+    
      // compute the best mousePosition with snapping
-     this.mousePosition.x = relativeX;
-     this.mousePosition.y = relativeY;
+     var point = {x: relativeX, y: relativeY};
+     if(this.props.walls.length > 0) {
+       var wall = this.props.walls[this.props.walls.length - 1];
+       // todo: 6 is the magic number...
+       if(wall.points.length > 1 && getDistance(wall.points[0], {x: relativeX, y: relativeY}) < 6) {
+         point = wall.points[0];
+       }
+       
+       if(wall.points.length > 0) {
+         this.contextCursor.save();
+         this.contextCursor.setLineDash([2, 2]);
+         this.contextCursor.lineWidth = "1";
+         this.contextCursor.beginPath();
+         this.contextCursor.moveTo(wall.points[wall.points.length - 1].x, wall.points[wall.points.length - 1].y);
+         this.contextCursor.lineTo(point.x, point.y);
+         this.contextCursor.strokeStyle = 'blue';
+         this.contextCursor.stroke();
+         this.contextCursor.restore();            
+       }
+     }
      
-     this.context.save();
-     this.context.strokeStyle = 'green';
-     this.context.beginPath();
-     this.context.moveTo(this.mousePosition.x - 5, this.mousePosition.y);
-     this.context.lineTo(this.mousePosition.x + 5, this.mousePosition.y);
-     this.context.stroke();
-     this.context.beginPath();
-     this.context.moveTo(this.mousePosition.x, this.mousePosition.y - 5);
-     this.context.lineTo(this.mousePosition.x, this.mousePosition.y + 5);
-     this.context.stroke();
-     this.context.restore();
+     // draw cursor
+     this.contextCursor.save();
+     this.contextCursor.lineWidth = "2";
+     this.contextCursor.strokeStyle = 'green';
+     this.contextCursor.beginPath();
+     this.contextCursor.moveTo(point.x, point.y - 5);
+     this.contextCursor.lineTo(point.x, point.y + 5);
+     this.contextCursor.stroke();
+     this.contextCursor.beginPath();
+     this.contextCursor.moveTo(point.x - 5, point.y);
+     this.contextCursor.lineTo(point.x + 5, point.y);
+     this.contextCursor.stroke();
+     this.contextCursor.restore();
      
-     this.contextBackground.save();
-     this.contextBackground.strokeStyle = 'red';
-     this.contextBackground.beginPath();
-     this.contextBackground.moveTo(this.mousePosition.x - 5 + 5, this.mousePosition.y + 5);
-     this.contextBackground.lineTo(this.mousePosition.x + 5 + 5, this.mousePosition.y + 5);
-     this.contextBackground.stroke();
-     this.contextBackground.beginPath();
-     this.contextBackground.moveTo(this.mousePosition.x+5, this.mousePosition.y - 5+5);
-     this.contextBackground.lineTo(this.mousePosition.x+5, this.mousePosition.y + 5+5);
-     this.contextBackground.stroke();
-     this.contextBackground.restore();
-     
-     //todowawa: have 3 canvases that overlap each other
+     this.mousePosition = point;
    },
-   componentDidMount: function()
-   {
+   componentDidMount: function() {
      this.context = this.refs.planCanvas.getContext("2d");  
      this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
+     this.contextCursor = this.refs.cursorCanvas.getContext("2d");  
    },
-   componentDidUpdate: function()
-   {
+   componentDidUpdate: function() {
      this.context = this.refs.planCanvas.getContext("2d");  
      this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
      
-     if(this.loadedImage)
-     {
+     if(this.loadedImage) {
          this.contextBackground.clearRect(0, 0, this.refs.backgroundCanvas.width, this.refs.backgroundCanvas.height);
          this.contextBackground.drawImage(this.loadedImage, 0, 0);
          this.loadedImage = null;
      }
    },
-   shouldComponentUpdate: function(nextProps, nextState) {  
-     if(nextProps.image !== this.props.image)
-     {
+   drawPoint: function (point, color, context) {
+     context.save();
+     context.lineWidth = "1";
+     context.beginPath();
+     context.arc(point.x, point.y, 3, 0, 2 * Math.PI, false);
+     context.fillStyle = color;
+     context.fill();
+     context.restore();
+   },
+   drawLine: function(wall, color) {
+     this.context.save();
+     this.context.beginPath();
+     this.context.lineWidth = "1";
+     this.context.strokeStyle = color;
+     for(var j = 0; j < wall.points.length; j++) {
+       if(j == 0) {
+         this.context.moveTo(wall.points[j].x, wall.points[j].y);
+       } else {
+         this.context.lineTo(wall.points[j].x, wall.points[j].y);  
+       }
+     }
+     this.context.stroke();
+     this.context.restore();
+   },
+   shouldComponentUpdate: function(nextProps, nextState) {
+     if(nextProps.image !== this.props.image) {
        var img = new Image();
        img.src = nextProps.image;
        var imgLoad = function() {
@@ -272,17 +319,28 @@ var CanvasComponent = React.createClass({
          this.forceUpdate();            
        }
        img.onload = imgLoad.bind(this);
+     } else {
+       // draw the points. right now we redraw everything.
+       this.context.clearRect(0, 0, this.refs.backgroundCanvas.width, this.refs.backgroundCanvas.height);
+       for(var i = 0; i < this.props.walls.length; i++) {
+         var wall = this.props.walls[i];
+         
+         for(var j = 0; j < wall.points.length; j++) {
+           this.drawPoint(wall.points[j], 'blue', this.context);
+         }
+         
+         this.drawLine(wall, 'blue');
+       }
      }
      return false;
    },
-   render: function()
-   {
+   render: function() {
        return <div className="canvasContainer" style={{width: this.width + "px", height: this.height + "px"}}>
                 <canvas ref="backgroundCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
-                <canvas ref="planCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} onMouseMove={this.onMouseMove} onClick={this.onClick} />
+                <canvas ref="planCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
+                <canvas ref="cursorCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} onMouseMove={this.onMouseMove} onClick={this.onClick} />
               </div>;
-   }   
-    
+   }
 });
 
 ReactDOM.render(

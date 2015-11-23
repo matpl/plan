@@ -218,7 +218,7 @@ function WallChain()
 					{
 						drawArc(this.points[i].x, this.points[i].y * -1, context);   
 					}
-				} 	
+				}
 			}
 		}
 	}
