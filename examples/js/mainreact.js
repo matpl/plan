@@ -7,10 +7,38 @@ var ReactDOM = require('react-dom');
 //todowawa: beware of automatic semi colon insertion, so put every curly brace on the same lineHeight
 //todowawa: convert 4 spaces to 2 spaces
 //todowawa: clear points and walls when image changes
+//todowawa: check performance of recreating the parametric stuff every time
 
-function getDistance(point, point2)
-{
+function getDistance(point, point2) {
   return Math.sqrt(Math.pow(point.x - point2.x, 2) + Math.pow(point.y - point2.y, 2));
+}
+
+function getIntersection(parametricLine, parametricLine2) {
+  //http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+  var r = {x: parametricLine2.x1 - parametricLine2.x0, y: parametricLine2.y1 - parametricLine2.y0};
+  var s = {x: parametricLine.x1 - parametricLine.x0, y: parametricLine.y1 - parametricLine.y0};
+  var res = r.x * s.y - r.y * s.x;
+  if(res == 0) {
+    // lines are parallel
+    return null;
+  } else {
+    var t = (parametricLine.x0 - parametricLine2.x0) * s.y - (parametricLine.y0 - parametricLine2.y0)  * s.x / res;
+    var t = (parametricLine.x0 - parametricLine2.x0) * s.y - (parametricLine.y0 - parametricLine2.y0)  * s.x / res;
+    
+    return {x: parametricLine2.x0 + t*r.x, y: parametricLine2.y0 + t*r.y};
+  }    
+}
+
+function getParametricLine(point, point2) {
+  var line = {x0: point.x, y0: point.y, x1: point2.x, y1: point2.y};
+  line.y1my0 = line.y1 - line.y0;
+  line.x1mx0 = line.x1 - line.x0;
+  line.x0y1 = line.x0 * line.y1;
+  line.x1y0 = line.x1 * line.y0;
+  line.norm = Math.sqrt(Math.pow(line.x1mx0, 2) + Math.pow(line.y1my0, 2));
+  line.normPow = Math.pow(line.x1mx0, 2) + Math.pow(line.y1my0, 2);
+  
+  return line;
 }
 
 var CommentList = React.createClass({
@@ -221,6 +249,8 @@ var CanvasComponent = React.createClass({
    {
        this.props.addPoint(this.mousePosition);
    },
+   guideLines : [],
+   guidePoints : [],
    onMouseMove : function(e)
    {
      var offset =  $(this.refs.planCanvas).offset();
@@ -236,6 +266,23 @@ var CanvasComponent = React.createClass({
        // todo: 6 is the magic number...
        if(wall.points.length > 1 && getDistance(wall.points[0], {x: relativeX, y: relativeY}) < 6) {
          point = wall.points[0];
+       } else {
+         if(e.ctrlKey) {
+           // check if it's close to a guide line or guide point???
+           var minDist = -1;
+           var closestPoint = null;
+           for(var i = 0; i < this.guidePoints.length; i++) {
+             var dist = getDistance(point, this.guidePoints[i]);
+             if(dist < 6 && (minDist == -1 || dist < minDist)) {
+               // todo: 6 is the magic number again...
+               closestPoint = this.guidePoints[i];
+               minDist = dist;
+             }
+           }
+           if(closestPoint != null) {
+             point = closestPoint;
+           }
+         }
        }
        
        if(wall.points.length > 0) {
@@ -245,9 +292,9 @@ var CanvasComponent = React.createClass({
          this.contextCursor.beginPath();
          this.contextCursor.moveTo(wall.points[wall.points.length - 1].x, wall.points[wall.points.length - 1].y);
          this.contextCursor.lineTo(point.x, point.y);
-         this.contextCursor.strokeStyle = 'blue';
+         this.contextCursor.strokeStyle = 'lightgray';
          this.contextCursor.stroke();
-         this.contextCursor.restore();            
+         this.contextCursor.restore();
        }
      }
      
@@ -320,16 +367,37 @@ var CanvasComponent = React.createClass({
        }
        img.onload = imgLoad.bind(this);
      } else {
+       // todo: this won't work for when we drag a point or something... We can't recompute all parametric lines everytime it changes... Only set state on mouse up??? Maybe...
+       
+       this.guideLines = [];
+       this.guidePoints = [];
+       
        // draw the points. right now we redraw everything.
        this.context.clearRect(0, 0, this.refs.backgroundCanvas.width, this.refs.backgroundCanvas.height);
        for(var i = 0; i < this.props.walls.length; i++) {
          var wall = this.props.walls[i];
          
          for(var j = 0; j < wall.points.length; j++) {
-           this.drawPoint(wall.points[j], 'blue', this.context);
+           this.drawPoint(wall.points[j], 'gray', this.context);
+           
+           // todo: do not create collinear lines
+           if(j > 0) {
+             this.guideLines.push(getParametricLine(wall.points[j - 1], wall.points[j]));
+           }
+           this.guideLines.push(getParametricLine(wall.points[j], {x: wall.points[j].x + 1, y: wall.points[j].y}));
+           this.guideLines.push(getParametricLine(wall.points[j], {x: wall.points[j].x, y: wall.points[j].y + 1}));
          }
          
-         this.drawLine(wall, 'blue');
+         this.drawLine(wall, 'gray');
+       }
+       
+       for(var i = 1; i < this.guideLines.length; i++) {
+         for(var j = 0; j < i; j++) {
+           var point = getIntersection(this.guideLines[i], this.guideLines[j]);
+           if(point != null) {
+             this.guidePoints.push(point);
+           }
+         }
        }
      }
      return false;
