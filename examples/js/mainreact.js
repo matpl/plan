@@ -150,6 +150,7 @@ var CanvasComponent = React.createClass({
    {
        this.props.addPoint(this.mousePosition);
    },
+   scale: 1,
    guideLines : [],
    guidePoints : [],
    onMouseMove : function(e)
@@ -158,8 +159,8 @@ var CanvasComponent = React.createClass({
      var relativeX = (e.pageX - offset.left);
      var relativeY = (offset.top - e.pageY) * -1;
     
-     this.contextCursor.clearRect(0, 0, this.refs.cursorCanvas.width, this.refs.cursorCanvas.height);
-     this.contextGuides.clearRect(0, 0, this.refs.guidesCanvas.width, this.refs.guidesCanvas.height);
+    this.clearContext(this.contextCursor, this.refs.cursorCanvas);
+    this.clearContext(this.contextGuides, this.refs.guidesCanvas);
     
      // compute the best mousePosition with snapping
      var point = {x: relativeX, y: relativeY};
@@ -238,6 +239,27 @@ var CanvasComponent = React.createClass({
      
      this.mousePosition = point;
    },
+   onWheel: function(e) {
+     // todo: make it smooth and have a max / min zoom
+     e.stopPropagation();
+     e.preventDefault();
+     if(e.deltaY < 0) {
+       this.scale = this.scale * 2;
+       this.context.scale(2, 2);
+       this.contextBackground.scale(2, 2);
+       this.contextGuides.scale(2, 2);
+       this.contextCursor.scale(2, 2);
+     } else {
+       this.scale = this.scale * 0.5;
+       this.context.scale(0.5, 0.5);
+       this.contextBackground.scale(0.5, 0.5);
+       this.contextGuides.scale(0.5, 0.5);
+       this.contextCursor.scale(0.5, 0.5);  
+     }
+     
+     this.onMouseMove(e);
+     this.drawWalls();
+   },
    componentDidMount: function() {
      this.context = this.refs.planCanvas.getContext("2d");  
      this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
@@ -249,10 +271,13 @@ var CanvasComponent = React.createClass({
      this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
      
      if(this.loadedImage) {
-         this.contextBackground.clearRect(0, 0, this.refs.backgroundCanvas.width, this.refs.backgroundCanvas.height);
+         this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
          this.contextBackground.drawImage(this.loadedImage, 0, 0);
          this.loadedImage = null;
      }
+   },
+   clearContext: function(context, canvas) {
+     context.clearRect(0, 0, canvas.width / this.scale, canvas.height / this.scale);
    },
    drawPoint: function (point, color, context) {
      context.save();
@@ -278,6 +303,18 @@ var CanvasComponent = React.createClass({
      this.context.stroke();
      this.context.restore();
    },
+   drawWalls: function() {
+     // draw the points. right now we redraw everything.
+     this.clearContext(this.context, this.refs.planCanvas);
+     for(var i = 0; i < this.props.walls.length; i++) {
+       var wall = this.props.walls[i];
+       for(var j = 0; j < wall.points.length; j++) {
+         this.drawPoint(wall.points[j], 'gray', this.context);
+       }
+         
+       this.drawLine(wall, 'gray');
+     }
+   },
    shouldComponentUpdate: function(nextProps, nextState) {
      if(nextProps.image !== this.props.image) {
        var img = new Image();
@@ -294,17 +331,15 @@ var CanvasComponent = React.createClass({
      } else {
        // todo: this won't work for when we drag a point or something... We can't recompute all parametric lines everytime it changes... Only set state on mouse up??? Maybe...
        
+       this.drawWalls();
+       
        this.guideLines = [];
        this.guidePoints = [];
        
-       // draw the points. right now we redraw everything.
-       this.context.clearRect(0, 0, this.refs.backgroundCanvas.width, this.refs.backgroundCanvas.height);
        for(var i = 0; i < this.props.walls.length; i++) {
          var wall = this.props.walls[i];
          
          for(var j = 0; j < wall.points.length; j++) {
-           this.drawPoint(wall.points[j], 'gray', this.context);
-           
            // todo: do not create collinear lines
            if(j > 0) {
              this.guideLines.push(getParametricLine(wall.points[j - 1], wall.points[j], this.refs.planCanvas.width, this.refs.planCanvas.height));
@@ -312,8 +347,6 @@ var CanvasComponent = React.createClass({
            this.guideLines.push(getParametricLine(wall.points[j], {x: wall.points[j].x + 1, y: wall.points[j].y}, this.refs.planCanvas.width, this.refs.planCanvas.height));
            this.guideLines.push(getParametricLine(wall.points[j], {x: wall.points[j].x, y: wall.points[j].y + 1}, this.refs.planCanvas.width, this.refs.planCanvas.height));
          }
-         
-         this.drawLine(wall, 'gray');
        }
        
        for(var i = 1; i < this.guideLines.length; i++) {
@@ -332,7 +365,7 @@ var CanvasComponent = React.createClass({
                 <canvas ref="backgroundCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
                 <canvas ref="guidesCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
                 <canvas ref="planCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
-                <canvas ref="cursorCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} onMouseMove={this.onMouseMove} onClick={this.onClick} />
+                <canvas ref="cursorCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} onMouseMove={this.onMouseMove} onClick={this.onClick} onWheel={this.onWheel} />
               </div>;
    }
 });
