@@ -143,23 +143,34 @@ var DropZoneComponent = React.createClass({
 });
 
 var CanvasComponent = React.createClass({
-   mousePosition : {x : -1, y : -1},
-   width: 500,
-   height: 500,
+   mousePosition : {x: -1, y: -1},
+   actualMousePosition: {x: 0, y: 0},
+   width: 960,
+   height: 540,
    onClick : function(e)
    {
        this.props.addPoint(this.mousePosition);
    },
+   panning: false,
    scale: 1,
+   image: null,
    guideLines : [],
    guidePoints : [],
    onMouseMove : function(e)
-   {
+   {       
+     if(this.panning) {
+       this.context.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
+       this.drawWalls();
+     }
+     
+     actualMousePosition = {x: e.pageX, y: e.pageY};
+       
      var offset =  $(this.refs.planCanvas).offset();
-     var relativeX = (e.pageX - offset.left);
-     var relativeY = (offset.top - e.pageY) * -1;
+     var relativeX = (e.pageX - offset.left) / this.scale;
+     var relativeY = (offset.top - e.pageY) * -1  / this.scale;
     
-    this.clearContext(this.contextCursor, this.refs.cursorCanvas);
+    this.contextCursor.clearRect(0, 0, this.refs.cursorCanvas.width, this.refs.cursorCanvas.height);
+    this.clearContext(this.contextCursorLine, this.refs.cursorLineCanvas);
     this.clearContext(this.contextGuides, this.refs.guidesCanvas);
     
      // compute the best mousePosition with snapping
@@ -211,15 +222,15 @@ var CanvasComponent = React.createClass({
        }
        
        if(wall.points.length > 0) {
-         this.contextCursor.save();
-         this.contextCursor.setLineDash([2, 2]);
-         this.contextCursor.lineWidth = "1";
-         this.contextCursor.beginPath();
-         this.contextCursor.moveTo(wall.points[wall.points.length - 1].x, wall.points[wall.points.length - 1].y);
-         this.contextCursor.lineTo(point.x, point.y);
-         this.contextCursor.strokeStyle = 'lightgray';
-         this.contextCursor.stroke();
-         this.contextCursor.restore();
+         this.contextCursorLine.save();
+         this.contextCursorLine.setLineDash([2, 2]);
+         this.contextCursorLine.lineWidth = "1";
+         this.contextCursorLine.beginPath();
+         this.contextCursorLine.moveTo(wall.points[wall.points.length - 1].x, wall.points[wall.points.length - 1].y);
+         this.contextCursorLine.lineTo(point.x, point.y);
+         this.contextCursorLine.strokeStyle = 'lightgray';
+         this.contextCursorLine.stroke();
+         this.contextCursorLine.restore();
        }
      }
      
@@ -228,12 +239,12 @@ var CanvasComponent = React.createClass({
      this.contextCursor.lineWidth = "2";
      this.contextCursor.strokeStyle = 'green';
      this.contextCursor.beginPath();
-     this.contextCursor.moveTo(point.x, point.y - 5);
-     this.contextCursor.lineTo(point.x, point.y + 5);
+     this.contextCursor.moveTo(point.x * this.scale, point.y * this.scale - 5);
+     this.contextCursor.lineTo(point.x * this.scale, point.y * this.scale + 5);
      this.contextCursor.stroke();
      this.contextCursor.beginPath();
-     this.contextCursor.moveTo(point.x - 5, point.y);
-     this.contextCursor.lineTo(point.x + 5, point.y);
+     this.contextCursor.moveTo(point.x * this.scale - 5, point.y * this.scale);
+     this.contextCursor.lineTo(point.x * this.scale + 5, point.y * this.scale);
      this.contextCursor.stroke();
      this.contextCursor.restore();
      
@@ -248,23 +259,36 @@ var CanvasComponent = React.createClass({
        this.context.scale(2, 2);
        this.contextBackground.scale(2, 2);
        this.contextGuides.scale(2, 2);
-       this.contextCursor.scale(2, 2);
+       this.contextCursorLine.scale(2, 2);
      } else {
        this.scale = this.scale * 0.5;
        this.context.scale(0.5, 0.5);
        this.contextBackground.scale(0.5, 0.5);
        this.contextGuides.scale(0.5, 0.5);
-       this.contextCursor.scale(0.5, 0.5);  
+       this.contextCursorLine.scale(0.5, 0.5);
      }
      
      this.onMouseMove(e);
      this.drawWalls();
+     
+     this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
+     this.contextBackground.drawImage(this.image, 0, 0);
+   },
+   onMouseDown: function(e) {
+     this.panning = true;
+   },
+   onMouseUp: function(e) {
+     this.panning = false;
+   },
+   onMouseLeave: function(e) {
+     this.panning = false;
    },
    componentDidMount: function() {
      this.context = this.refs.planCanvas.getContext("2d");  
      this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
      this.contextGuides = this.refs.guidesCanvas.getContext("2d");
      this.contextCursor = this.refs.cursorCanvas.getContext("2d");
+     this.contextCursorLine = this.refs.cursorLineCanvas.getContext("2d");
    },
    componentDidUpdate: function() {
      this.context = this.refs.planCanvas.getContext("2d");  
@@ -273,6 +297,7 @@ var CanvasComponent = React.createClass({
      if(this.loadedImage) {
          this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
          this.contextBackground.drawImage(this.loadedImage, 0, 0);
+         this.image = this.loadedImage;
          this.loadedImage = null;
      }
    },
@@ -365,7 +390,8 @@ var CanvasComponent = React.createClass({
                 <canvas ref="backgroundCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
                 <canvas ref="guidesCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
                 <canvas ref="planCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
-                <canvas ref="cursorCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} onMouseMove={this.onMouseMove} onClick={this.onClick} onWheel={this.onWheel} />
+                <canvas ref="cursorLineCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
+                <canvas ref="cursorCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} onMouseMove={this.onMouseMove} onMouseLeave={this.onMouseLeave} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} onClick={this.onClick} onWheel={this.onWheel} />
               </div>;
    }
 });
