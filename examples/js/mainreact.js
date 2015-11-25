@@ -157,7 +157,8 @@ var CanvasComponent = React.createClass({
    guideLines : [],
    guidePoints : [],
    onMouseMove : function(e)
-   {       
+   {
+     // todo: do the panning on the whole window. the click has to be in the canvas, but the drag can be anywhere.
      if(this.panning) {
        this.context.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
        this.drawWalls();
