@@ -215,7 +215,7 @@ var CanvasComponent = React.createClass({
              this.contextGuides.beginPath();
              this.contextGuides.moveTo(this.guideLines[i].p0.x, this.guideLines[i].p0.y);
              this.contextGuides.lineTo(this.guideLines[i].p1.x, this.guideLines[i].p1.y);
-             this.contextGuides.strokeStyle = 'lightgray';
+             this.contextGuides.strokeStyle = '#62cdf2';
              this.contextGuides.stroke();
              this.contextGuides.restore();
            }
@@ -229,7 +229,7 @@ var CanvasComponent = React.createClass({
          this.contextCursorLine.beginPath();
          this.contextCursorLine.moveTo(wall.points[wall.points.length - 1].x, wall.points[wall.points.length - 1].y);
          this.contextCursorLine.lineTo(point.x, point.y);
-         this.contextCursorLine.strokeStyle = 'lightgray';
+         this.contextCursorLine.strokeStyle = '#62cdf2';
          this.contextCursorLine.stroke();
          this.contextCursorLine.restore();
        }
@@ -238,7 +238,7 @@ var CanvasComponent = React.createClass({
      // draw cursor
      this.contextCursor.save();
      this.contextCursor.lineWidth = "2";
-     this.contextCursor.strokeStyle = 'green';
+     this.contextCursor.strokeStyle = '#05729a';
      this.contextCursor.beginPath();
      this.contextCursor.moveTo(point.x * this.scale, point.y * this.scale - 5);
      this.contextCursor.lineTo(point.x * this.scale, point.y * this.scale + 5);
@@ -261,15 +261,18 @@ var CanvasComponent = React.createClass({
        this.contextBackground.scale(2, 2);
        this.contextGuides.scale(2, 2);
        this.contextCursorLine.scale(2, 2);
+       this.contextGrid.scale(2, 2);
      } else {
        this.scale = this.scale * 0.5;
        this.context.scale(0.5, 0.5);
        this.contextBackground.scale(0.5, 0.5);
        this.contextGuides.scale(0.5, 0.5);
        this.contextCursorLine.scale(0.5, 0.5);
+       this.contextGrid.scale(0.5, 0.5);
      }
      
      this.onMouseMove(e);
+     this.drawGrid();
      this.drawWalls();
      
      this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
@@ -290,11 +293,18 @@ var CanvasComponent = React.createClass({
      this.contextGuides = this.refs.guidesCanvas.getContext("2d");
      this.contextCursor = this.refs.cursorCanvas.getContext("2d");
      this.contextCursorLine = this.refs.cursorLineCanvas.getContext("2d");
+     this.contextGrid = this.refs.gridCanvas.getContext("2d");
+     
+     this.drawGrid();
    },
    componentDidUpdate: function() {
      this.context = this.refs.planCanvas.getContext("2d");  
      this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
-     
+     this.contextGuides = this.refs.guidesCanvas.getContext("2d");
+     this.contextCursor = this.refs.cursorCanvas.getContext("2d");
+     this.contextCursorLine = this.refs.cursorLineCanvas.getContext("2d");
+     this.contextGrid = this.refs.gridCanvas.getContext("2d");
+     alert('crap');
      if(this.loadedImage) {
          this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
          this.contextBackground.drawImage(this.loadedImage, 0, 0);
@@ -335,10 +345,42 @@ var CanvasComponent = React.createClass({
      for(var i = 0; i < this.props.walls.length; i++) {
        var wall = this.props.walls[i];
        for(var j = 0; j < wall.points.length; j++) {
-         this.drawPoint(wall.points[j], 'gray', this.context);
+         this.drawPoint(wall.points[j], '#2d9ac2', this.context);
        }
          
-       this.drawLine(wall, 'gray');
+       this.drawLine(wall, '#2d9ac2');
+     }
+   },
+   drawGrid: function(start, lineWidth, delta, steps) {
+     start = typeof start === 'undefined' ? 0 : start;
+     lineWidth = typeof lineWidth === 'undefined' ? 0.4 : lineWidth;
+     delta = typeof delta === 'undefined' ? 25 : delta;
+     steps = typeof steps === 'undefined' ? 0 : steps;
+     var max = 5;
+     if(steps == 0) {
+         this.clearContext(this.contextGrid, this.refs.gridCanvas);
+         max = 400;
+     }
+     
+     for(var i = 0; i < max; i++) {
+       if(i != 0) {
+         this.contextGrid.save();
+         this.contextGrid.lineWidth = lineWidth;
+         this.contextGrid.strokeStyle = 'lightgray';
+         this.contextGrid.beginPath();
+         this.contextGrid.moveTo(start + i * delta, -10000);
+         this.contextGrid.lineTo(start + i * delta, 10000);
+         this.contextGrid.stroke();
+         this.contextGrid.beginPath();
+         this.contextGrid.moveTo(-10000, start + i * delta);
+         this.contextGrid.lineTo(10000, start + i * delta);
+         this.contextGrid.stroke();
+         this.contextGrid.restore();
+       }
+       //todo: either keep 1 level, or show more levels as it zooms in
+       if(steps < 1) {
+         this.drawGrid(start + i * delta, lineWidth / 2.0, delta / 5.0, steps + 1);
+       }
      }
    },
    shouldComponentUpdate: function(nextProps, nextState) {
@@ -389,6 +431,7 @@ var CanvasComponent = React.createClass({
    render: function() {
        return <div className="canvasContainer" style={{width: this.width + "px", height: this.height + "px"}}>
                 <canvas ref="backgroundCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
+                <canvas ref="gridCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
                 <canvas ref="guidesCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
                 <canvas ref="planCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
                 <canvas ref="cursorLineCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
