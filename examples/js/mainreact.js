@@ -3,9 +3,10 @@ var $ = require('jquery');
 var React = require('react');
 var ReactDOM = require('react-dom');
 
-//todowawa fast: check LAG on mousemove with some points... something is wrong
 //todowawa fast: check the clear rect on mouse move with panning
 
+
+//todowawa: have some kind of viewport variable for what part of the canvas is actually visible (so we don't have to do the this.scale formula every single time)
 //todowawa: check bootstrap!!!
 //todowawa: beware of automatic semi colon insertion, so put every curly brace on the same lineHeight
 //todowawa: convert 4 spaces to 2 spaces
@@ -156,6 +157,8 @@ var CanvasComponent = React.createClass({
        this.props.addPoint(this.mousePosition);
    },
    panning: false,
+   ctrl: false,
+   shift: false,
    scale: 1,
    translation: {x: 0, y: 0},
    image: null,
@@ -167,11 +170,26 @@ var CanvasComponent = React.createClass({
      if(this.panning) {
        // translation is in grid units and not pixels
        this.translation = {x: this.translation.x + (e.pageX - actualMousePosition.x) / this.scale, y: this.translation.y + (e.pageY - actualMousePosition.y) / this.scale};
-       this.context.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
-       this.contextBackground.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
-       this.contextGuides.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
-       this.contextCursorLine.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
-       this.contextGrid.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
+       var beforeX = this.translation.x;
+       var beforeY = this.translation.y;
+       
+       //todo: this doesn't work. Fix this properly with the scale limit and stuff
+       /*if(this.translation.x < -10000 + (this.refs.planCanvas.width) / this.scale) {
+         this.translation.x = -10000 + (this.refs.planCanvas.width) / this.scale;
+       } else if(this.translation.x > 10000) {
+         this.translation.x = 10000;
+       }
+       if(this.translation.y < -10000 + (this.refs.planCanvas.height) / this.scale) {
+         this.translation.y = -10000 + (this.refs.planCanvas.height) / this.scale;
+       } else if(this.translation.y > 10000) {
+         this.translation.y = 10000;
+       }*/
+       
+       this.context.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
+       this.contextBackground.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
+       this.contextGuides.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
+       this.contextCursorLine.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
+       this.contextGrid.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
        this.drawWalls();
        this.drawGrid();
      }
@@ -186,7 +204,6 @@ var CanvasComponent = React.createClass({
     
     this.contextCursor.clearRect(0, 0, this.refs.cursorCanvas.width, this.refs.cursorCanvas.height);
     this.clearContext(this.contextCursorLine, this.refs.cursorLineCanvas);
-    this.clearContext(this.contextGuides, this.refs.guidesCanvas);
     
      // compute the best mousePosition with snapping
      var point = {x: relativeX, y: relativeY};
@@ -196,11 +213,11 @@ var CanvasComponent = React.createClass({
        if(wall.points.length > 1 && getDistance(wall.points[0], {x: relativeX, y: relativeY}) < 6) {
          point = wall.points[0];
        } else {
-         if(e.ctrlKey) {
+         if(this.ctrl) {
            var closestPoint = null;
            
            // snap to guide points
-           if(e.shiftKey) {
+           if(this.shift) {
              var minDist = -1;
              for(var i = 0; i < this.guidePoints.length; i++) {
                var dist = getDistance(point, this.guidePoints[i]);
@@ -220,18 +237,6 @@ var CanvasComponent = React.createClass({
            
            if(closestPoint != null) {
              point = closestPoint;
-           }
-           
-           for(var i = 0; i < this.guideLines.length; i++) {
-             this.contextGuides.save();
-             this.contextGuides.setLineDash([2, 2]);
-             this.contextGuides.lineWidth = "1";
-             this.contextGuides.beginPath();
-             this.contextGuides.moveTo(this.guideLines[i].p0.x, this.guideLines[i].p0.y);
-             this.contextGuides.lineTo(this.guideLines[i].p1.x, this.guideLines[i].p1.y);
-             this.contextGuides.strokeStyle = '#62cdf2';
-             this.contextGuides.stroke();
-             this.contextGuides.restore();
            }
          }
        }
@@ -264,6 +269,26 @@ var CanvasComponent = React.createClass({
      this.contextCursor.restore();
      
      this.mousePosition = point;
+   },
+   onKeyDown: function(e) {
+     if(e.ctrlKey && !this.ctrl) {
+      this.ctrl = true;
+      this.drawGuides();
+     }
+     if(e.shiftKey && !this.shift) {
+      this.shift = true;
+      this.drawGuides();
+     }
+   },
+   onKeyUp: function(e) {
+    if(e.keyCode == 17 && this.ctrl) {
+      this.ctrl = false;
+      this.drawGuides();
+    }
+    if(e.keyCode == 16 && this.shift) {
+      this.shift = false;
+      this.drawGuides();
+    }
    },
    onWheel: function(e) {
      // todo: make it smooth and have a max / min zoom
@@ -298,9 +323,12 @@ var CanvasComponent = React.createClass({
      this.contextCursorLine.translate(this.translation.x, this.translation.y);
      this.contextGrid.translate(this.translation.x, this.translation.y);
      
+     //todo: do NOT call mouse move.. call drawGuides, drawCursor and stuff like this
      this.onMouseMove(e);
      this.drawGrid();
      this.drawWalls();
+     
+     this.drawGuides();
      
      this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
      if(this.image != null) {
@@ -325,6 +353,13 @@ var CanvasComponent = React.createClass({
      this.contextGrid = this.refs.gridCanvas.getContext("2d");
      
      this.drawGrid();
+     
+     $(document.body).on('keydown', this.onKeyDown);
+     $(document.body).on('keyup', this.onKeyUp);
+   },
+   componentWillUnmount: function() {
+     $(document.body).off('keydown', this.onKeyDown);
+     $(document.body).off('keyup', this.onKeyUp);
    },
    componentDidUpdate: function() {
      this.context = this.refs.planCanvas.getContext("2d");  
@@ -342,7 +377,8 @@ var CanvasComponent = React.createClass({
      }
    },
    clearContext: function(context, canvas) {
-     context.clearRect(0, 0, canvas.width / this.scale, canvas.height / this.scale);
+     //context.clearRect(0, 0, canvas.width / this.scale - this.translation.x, canvas.height / this.scale - this.translation.y);
+     context.clearRect(-10000, -10000, 10000 * 2,  10000 * 2);
    },
    drawPoint: function (point, color, context) {
      context.save();
@@ -380,6 +416,22 @@ var CanvasComponent = React.createClass({
        this.drawLine(wall, '#2d9ac2');
      }
    },
+   drawGuides: function() {
+     this.clearContext(this.contextGuides, this.refs.guidesCanvas);
+     if(this.ctrl) {
+       for(var i = 0; i < this.guideLines.length; i++) {
+         this.contextGuides.save();
+         this.contextGuides.setLineDash([2, 2]);
+         this.contextGuides.lineWidth = "1";
+         this.contextGuides.beginPath();
+         this.contextGuides.moveTo(this.guideLines[i].p0.x, this.guideLines[i].p0.y);
+         this.contextGuides.lineTo(this.guideLines[i].p1.x, this.guideLines[i].p1.y);
+         this.contextGuides.strokeStyle = '#62cdf2';
+         this.contextGuides.stroke();
+         this.contextGuides.restore();
+       }
+     }
+   },
    drawGrid: function(start, lineWidth, delta, steps) {
      start = typeof start === 'undefined' ? 0 : start;
      lineWidth = typeof lineWidth === 'undefined' ? 0.4 : lineWidth;
@@ -388,7 +440,7 @@ var CanvasComponent = React.createClass({
      var max = 5;
      if(steps == 0) {
          this.clearContext(this.contextGrid, this.refs.gridCanvas);
-         max = 400;
+         max = 800;
      }
      
      for(var i = 0; i < max; i++) {
@@ -397,17 +449,17 @@ var CanvasComponent = React.createClass({
          this.contextGrid.lineWidth = lineWidth;
          this.contextGrid.strokeStyle = 'lightgray';
          this.contextGrid.beginPath();
-         this.contextGrid.moveTo(start + i * delta, -10000);
-         this.contextGrid.lineTo(start + i * delta, 10000);
+         this.contextGrid.moveTo(start + i * delta - 10000, -10000);
+         this.contextGrid.lineTo(start + i * delta - 10000, 10000);
          this.contextGrid.stroke();
          this.contextGrid.beginPath();
-         this.contextGrid.moveTo(-10000, start + i * delta);
-         this.contextGrid.lineTo(10000, start + i * delta);
+         this.contextGrid.moveTo(-10000, start + i * delta - 10000);
+         this.contextGrid.lineTo(10000, start + i * delta - 10000);
          this.contextGrid.stroke();
          this.contextGrid.restore();
        }
        //todo: either keep 1 level, or show more levels as it zooms in
-       if(steps < 1) {
+       if(steps < 1 && this.scale >= 1) {
          this.drawGrid(start + i * delta, lineWidth / 2.0, delta / 5.0, steps + 1);
        }
      }
@@ -454,6 +506,7 @@ var CanvasComponent = React.createClass({
            }
          }
        }
+       this.drawGuides();
      }
      return false;
    },
