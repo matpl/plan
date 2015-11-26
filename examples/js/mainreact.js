@@ -3,6 +3,9 @@ var $ = require('jquery');
 var React = require('react');
 var ReactDOM = require('react-dom');
 
+//todowawa fast: check LAG on mousemove with some points... something is wrong
+//todowawa fast: check the clear rect on mouse move with panning
+
 //todowawa: check bootstrap!!!
 //todowawa: beware of automatic semi colon insertion, so put every curly brace on the same lineHeight
 //todowawa: convert 4 spaces to 2 spaces
@@ -10,6 +13,7 @@ var ReactDOM = require('react-dom');
 //todowawa: check performance of recreating the parametric stuff every time
 //todowawa: have a zoom in / zoom out. and the "magic" number should be in function of the zoom factor
 //todowawa: escape for ending the wall
+//todowawa: magic numbers -10000 and 10000 and 6
 
 function getDistance(point, point2) {
   return Math.sqrt(Math.pow(point.x - point2.x, 2) + Math.pow(point.y - point2.y, 2));
@@ -30,7 +34,7 @@ function getIntersection(parametricLine, parametricLine2) {
   }    
 }
 
-function getParametricLine(point, point2, canvasWidth, canvasHeight) {
+function getParametricLine(point, point2, minX, maxX, minY, maxY) {
   var line = {x0: point.x, y0: point.y, x1: point2.x, y1: point2.y};
   line.y1my0 = line.y1 - line.y0;
   line.y0my1 = line.y0 - line.y1;
@@ -41,11 +45,11 @@ function getParametricLine(point, point2, canvasWidth, canvasHeight) {
   line.normPow = Math.pow(line.x1mx0, 2) + Math.pow(line.y1my0, 2);
   
   // get the 2 points of the line to draw on the canvas
-  var canvasLines = [{x0: 0, y0: 0, x1: canvasWidth, y1: 0}, {x0: 0, y0: 0, x1: 0, y1: canvasHeight}, {x0: 0, y0: canvasHeight, x1: canvasWidth, y1: canvasHeight}, {x0: canvasWidth, y0: 0, x1: canvasWidth, y1: canvasHeight}];
+  var canvasLines = [{x0: minX, y0: minY, x1: maxX, y1: minY}, {x0: minX, y0: minY, x1: minX, y1: maxY}, {x0: minX, y0: maxY, x1: maxX, y1: maxY}, {x0: maxX, y0: minY, x1: maxX, y1: maxY}];
   var canvasPoints = [];
   for(var i = 0; i < canvasLines.length; i++) {
     var intersection = getIntersection(line, canvasLines[i]); 
-    if(intersection != null && intersection.x >= 0 && intersection.x <= canvasWidth && intersection.y >= 0 && intersection.y <= canvasHeight && (canvasPoints.length == 0 || canvasPoints[0] != intersection.x || canvasPoints[0].y != intersection.y)) {
+    if(intersection != null && intersection.x >= minX && intersection.x <= maxX && intersection.y >= minY && intersection.y <= maxY && (canvasPoints.length == 0 || canvasPoints[0] != intersection.x || canvasPoints[0].y != intersection.y)) {
       canvasPoints.push(intersection);
       if(canvasPoints.length == 2) {
           break;
@@ -153,6 +157,7 @@ var CanvasComponent = React.createClass({
    },
    panning: false,
    scale: 1,
+   translation: {x: 0, y: 0},
    image: null,
    guideLines : [],
    guidePoints : [],
@@ -160,15 +165,24 @@ var CanvasComponent = React.createClass({
    {
      // todo: do the panning on the whole window. the click has to be in the canvas, but the drag can be anywhere.
      if(this.panning) {
+       // translation is in grid units and not pixels
+       this.translation = {x: this.translation.x + (e.pageX - actualMousePosition.x) / this.scale, y: this.translation.y + (e.pageY - actualMousePosition.y) / this.scale};
        this.context.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
+       this.contextBackground.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
+       this.contextGuides.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
+       this.contextCursorLine.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
+       this.contextGrid.translate((e.pageX - actualMousePosition.x) / this.scale, (e.pageY - actualMousePosition.y) / this.scale);
        this.drawWalls();
+       this.drawGrid();
      }
      
      actualMousePosition = {x: e.pageX, y: e.pageY};
        
      var offset =  $(this.refs.planCanvas).offset();
-     var relativeX = (e.pageX - offset.left) / this.scale;
-     var relativeY = (offset.top - e.pageY) * -1  / this.scale;
+     
+     // relativeX / relativeY are in grid units and not pixels
+     var relativeX = (e.pageX - offset.left) / this.scale - this.translation.x;
+     var relativeY = ((offset.top - e.pageY) * -1) / this.scale - this.translation.y;
     
     this.contextCursor.clearRect(0, 0, this.refs.cursorCanvas.width, this.refs.cursorCanvas.height);
     this.clearContext(this.contextCursorLine, this.refs.cursorLineCanvas);
@@ -240,12 +254,12 @@ var CanvasComponent = React.createClass({
      this.contextCursor.lineWidth = "2";
      this.contextCursor.strokeStyle = '#05729a';
      this.contextCursor.beginPath();
-     this.contextCursor.moveTo(point.x * this.scale, point.y * this.scale - 5);
-     this.contextCursor.lineTo(point.x * this.scale, point.y * this.scale + 5);
+     this.contextCursor.moveTo((point.x + this.translation.x) * this.scale, (point.y + this.translation.y) * this.scale - 5);
+     this.contextCursor.lineTo((point.x + this.translation.x) * this.scale, (point.y + this.translation.y) * this.scale + 5);
      this.contextCursor.stroke();
      this.contextCursor.beginPath();
-     this.contextCursor.moveTo(point.x * this.scale - 5, point.y * this.scale);
-     this.contextCursor.lineTo(point.x * this.scale + 5, point.y * this.scale);
+     this.contextCursor.moveTo((point.x + this.translation.x) * this.scale - 5, (point.y + this.translation.y) * this.scale);
+     this.contextCursor.lineTo((point.x + this.translation.x) * this.scale + 5, (point.y + this.translation.y) * this.scale);
      this.contextCursor.stroke();
      this.contextCursor.restore();
      
@@ -255,8 +269,15 @@ var CanvasComponent = React.createClass({
      // todo: make it smooth and have a max / min zoom
      e.stopPropagation();
      e.preventDefault();
+     
+     // translate back to original 0,0 before scaling
+     this.context.translate(-this.translation.x, -this.translation.y);
+     this.contextBackground.translate(-this.translation.x, -this.translation.y);
+     this.contextGuides.translate(-this.translation.x, -this.translation.y);
+     this.contextCursorLine.translate(-this.translation.x, -this.translation.y);
+     this.contextGrid.translate(-this.translation.x, -this.translation.y);
      if(e.deltaY < 0) {
-       this.scale = this.scale * 2;
+       this.scale = this.scale * 2;       
        this.context.scale(2, 2);
        this.contextBackground.scale(2, 2);
        this.contextGuides.scale(2, 2);
@@ -270,13 +291,21 @@ var CanvasComponent = React.createClass({
        this.contextCursorLine.scale(0.5, 0.5);
        this.contextGrid.scale(0.5, 0.5);
      }
+     // re-translate to the right spot
+     this.context.translate(this.translation.x, this.translation.y);
+     this.contextBackground.translate(this.translation.x, this.translation.y);
+     this.contextGuides.translate(this.translation.x, this.translation.y);
+     this.contextCursorLine.translate(this.translation.x, this.translation.y);
+     this.contextGrid.translate(this.translation.x, this.translation.y);
      
      this.onMouseMove(e);
      this.drawGrid();
      this.drawWalls();
      
      this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
-     this.contextBackground.drawImage(this.image, 0, 0);
+     if(this.image != null) {
+       this.contextBackground.drawImage(this.image, 0, 0);
+     }
    },
    onMouseDown: function(e) {
      this.panning = true;
@@ -304,7 +333,7 @@ var CanvasComponent = React.createClass({
      this.contextCursor = this.refs.cursorCanvas.getContext("2d");
      this.contextCursorLine = this.refs.cursorLineCanvas.getContext("2d");
      this.contextGrid = this.refs.gridCanvas.getContext("2d");
-     alert('crap');
+     
      if(this.loadedImage) {
          this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
          this.contextBackground.drawImage(this.loadedImage, 0, 0);
@@ -410,10 +439,10 @@ var CanvasComponent = React.createClass({
          for(var j = 0; j < wall.points.length; j++) {
            // todo: do not create collinear lines
            if(j > 0) {
-             this.guideLines.push(getParametricLine(wall.points[j - 1], wall.points[j], this.refs.planCanvas.width, this.refs.planCanvas.height));
+             this.guideLines.push(getParametricLine(wall.points[j - 1], wall.points[j], -10000, 10000, -10000, 10000));
            }
-           this.guideLines.push(getParametricLine(wall.points[j], {x: wall.points[j].x + 1, y: wall.points[j].y}, this.refs.planCanvas.width, this.refs.planCanvas.height));
-           this.guideLines.push(getParametricLine(wall.points[j], {x: wall.points[j].x, y: wall.points[j].y + 1}, this.refs.planCanvas.width, this.refs.planCanvas.height));
+           this.guideLines.push(getParametricLine(wall.points[j], {x: wall.points[j].x + 1, y: wall.points[j].y}, -10000, 10000, -10000, 10000));
+           this.guideLines.push(getParametricLine(wall.points[j], {x: wall.points[j].x, y: wall.points[j].y + 1}, -10000, 10000, -10000, 10000));
          }
        }
        
