@@ -6,8 +6,8 @@ var ReactDOM = require('react-dom');
 /*var totalWidth = 19200;
 var totalHeight = 10800;*/
 
-var totalWidth = 975;
-var totalHeight = 550;
+var totalWidth = 1000;
+var totalHeight = 600;
 
 //todowawa fast: check the clear rect on mouse move with panning
 
@@ -156,8 +156,8 @@ var DropZoneComponent = React.createClass({
 var CanvasComponent = React.createClass({
    mousePosition : {x: -1, y: -1},
    actualMousePosition: {x: 0, y: 0},
-   width: 960,
-   height: 540,
+   width: 1000,
+   height: 600,
    onClick : function(e)
    {
        console.log(this.mousePosition.x + " " + this.mousePosition.y);
@@ -169,11 +169,53 @@ var CanvasComponent = React.createClass({
    scale: 1,
    translation: {x: 0, y: 0},
    image: null,
+   origin: {x: 0, y: 0},
    guideLines : [],
    guidePoints : [],
    panningOffset : {x:0, y:0},
+   pushTransform : function() {
+       
+       this.context.save();
+     this.contextBackground.save();
+     this.contextGuides.save();
+     this.contextCursorLine.save();
+     this.contextGrid.save();
+       
+   this.context.translate(this.width/2, this.height/2);
+         this.contextBackground.translate(this.width/2, this.height/2);
+         this.contextGuides.translate(this.width/2, this.height/2);
+         this.contextCursorLine.translate(this.width/2, this.height/2);
+         this.contextGrid.translate(this.width/2, this.height/2);
+         
+         this.context.scale(this.scale, this.scale);
+         this.contextBackground.scale(this.scale, this.scale);
+         this.contextGuides.scale(this.scale, this.scale);
+         this.contextCursorLine.scale(this.scale, this.scale);
+         this.contextGrid.scale(this.scale, this.scale);
+         
+         this.context.translate(-this.width/2, -this.height/2);
+         this.contextBackground.translate(-this.width/2, -this.height/2);         
+         this.contextGuides.translate(-this.width/2, -this.height/2);         
+         this.contextCursorLine.translate(-this.width/2, -this.height/2);         
+         this.contextGrid.translate(-this.width/2, -this.height/2);
+         
+         // this is the actual translation in scale 1 units
+         this.context.translate(this.translation.x, this.translation.y);
+         this.contextBackground.translate(this.translation.x, this.translation.y);
+         this.contextGuides.translate(this.translation.x, this.translation.y);
+         this.contextCursorLine.translate(this.translation.x, this.translation.y);
+         this.contextGrid.translate(this.translation.x, this.translation.y);
+   },
+   popTransform : function() {
+       this.context.restore();
+     this.contextBackground.restore();
+     this.contextGuides.restore();
+     this.contextCursorLine.restore();
+     this.contextGrid.restore();
+   },
    onMouseMove : function(e)
    {
+     this.pushTransform();
      // todo: do the panning on the whole window. the click has to be in the canvas, but the drag can be anywhere.
      if(this.panning) {
        // translation is in grid units and not pixels
@@ -181,6 +223,9 @@ var CanvasComponent = React.createClass({
        this.panningOffset = {x: this.panningOffset.x + (e.pageX - actualMousePosition.x) / this.scale, y: this.panningOffset.y + (e.pageY - actualMousePosition.y) / this.scale};
        
        this.translation = {x: this.translation.x + (e.pageX - actualMousePosition.x) / this.scale, y: this.translation.y + (e.pageY - actualMousePosition.y) / this.scale};
+       
+       this.origin = {x: -this.translation.x, y: -this.translation.y};
+       
        var beforeX = this.translation.x;
        var beforeY = this.translation.y;
        
@@ -196,13 +241,14 @@ var CanvasComponent = React.createClass({
          this.translation.y = 10000;
        }*/
        
-       console.log(this.translation.x + " " + this.translation.y);
+       //console.log(this.translation.x + " " + this.translation.y);
        
-       this.context.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
+       // TODOWAWA NOW NOW NOW
+       /*this.context.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
        this.contextBackground.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
        this.contextGuides.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
        this.contextCursorLine.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
-       this.contextGrid.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);
+       this.contextGrid.translate((e.pageX - actualMousePosition.x) / this.scale + (this.translation.x - beforeX), (e.pageY - actualMousePosition.y) / this.scale);*/
        this.drawWalls();
        this.drawGrid();
      }
@@ -213,10 +259,15 @@ var CanvasComponent = React.createClass({
      
      // relativeX / relativeY are in grid units and not pixels
      console.log('no translation ' + ((e.pageX - offset.left) / this.scale));
-     console.log('yes translation ' + ((e.pageX - offset.left) / this.scale - this.translation.x));
+     /*console.log('yes translation ' + ((e.pageX - offset.left) / this.scale - this.translation.x));*/
      console.log('just translation ' + (this.translation.x));
-     var relativeX = (e.pageX - offset.left) / this.scale - this.translation.x;
-     var relativeY = ((offset.top - e.pageY) * -1) / this.scale - this.translation.y;
+     var relativeX = (e.pageX - offset.left) / this.scale + (this.width - totalWidth / this.scale) / 2  - this.translation.x;
+     var relativeY = ((offset.top - e.pageY) * -1) / this.scale + (this.height - totalHeight / this.scale) / 2  - this.translation.y;
+     
+     console.log('relative ' + relativeX + " " + relativeY);
+     
+     //this.drawPoint({x: relativeX, y: relativeY}, 'green', this.context);
+     this.drawPoint({x: 450, y: 250}, 'green', this.context);
     
     this.contextCursor.clearRect(0, 0, this.refs.cursorCanvas.width, this.refs.cursorCanvas.height);
     this.clearContext(this.contextCursorLine, this.refs.cursorLineCanvas);
@@ -264,6 +315,7 @@ var CanvasComponent = React.createClass({
          this.contextCursorLine.beginPath();
          this.contextCursorLine.moveTo(wall.points[wall.points.length - 1].x, wall.points[wall.points.length - 1].y);
          this.contextCursorLine.lineTo(point.x, point.y);
+         //this.contextCursorLine.lineTo(this.origin.x, this.origin.y);
          this.contextCursorLine.strokeStyle = '#62cdf2';
          this.contextCursorLine.stroke();
          this.contextCursorLine.restore();
@@ -285,8 +337,12 @@ var CanvasComponent = React.createClass({
      this.contextCursor.restore();
      
      this.mousePosition = point;
+     
+     this.popTransform();
+     console.log("x : " + this.mousePosition.x + "  y : " + this.mousePosition.y);
    },
    onKeyDown: function(e) {
+     this.pushTransform();
      if(e.ctrlKey && !this.ctrl) {
       this.ctrl = true;
       this.drawGuides();
@@ -305,6 +361,8 @@ var CanvasComponent = React.createClass({
       this.shift = false;
       this.drawGuides();
     }
+    
+    this.popTransform();
    },
    onWheel: function(e) {
      // todo: make it smooth and have a max / min zoom
@@ -312,6 +370,12 @@ var CanvasComponent = React.createClass({
      e.preventDefault();
      
      // translate back to original 0,0 before scaling
+     
+     /*this.context.save();
+     this.contextBackground.save();
+     this.contextGuides.save();
+     this.contextCursorLine.save();
+     this.contextGrid.save();*/
      
      /*this.context.translate(-this.translation.x + (totalWidth / 2 - this.width / 2), -this.translation.y - (totalHeight / 2 - this.height / 2));
      this.contextBackground.translate(-this.translation.x + (totalWidth / 2 - this.width / 2), -this.translation.y - (totalHeight / 2 - this.height / 2));
@@ -324,39 +388,69 @@ var CanvasComponent = React.createClass({
          //todowawa NOW NOW NOW: the / (this.scale * 2) should only be applied on the part that was translated by the panning!! not the offset by the scaling!!
          // or not
          //this.translation = {x: this.translation.x / (this.scale * 2) + (-this.width/2 + this.width/(2*2)) / this.scale, y: this.translation.y / (this.scale * 2) + (-this.height/2 + this.height/(2*2)) / this.scale};
-         this.translation = {x: this.translation.x + (-this.width/2 + this.width/(2*2)) / this.scale, y: this.translation.y + (-this.height/2 + this.height/(2*2)) / this.scale};
+         //this.translation = {x: this.translation.x + (-this.width/2 + this.width/(2*2)) / this.scale, y: this.translation.y + (-this.height/2 + this.height/(2*2)) / this.scale};
+         
+         //this.translation = {x: this.translation.x - this.width/2 + this.width/(2*2), y: this.translation.y - this.height/2 + this.height/(2*2)}
+         
+         this.origin = {x: -this.translation.x, y: -this.translation.y};
            
          this.scale = this.scale * 2;       
-         this.context.scale(2, 2);
+         /*this.context.scale(2, 2);
          this.contextBackground.scale(2, 2);
          this.contextGuides.scale(2, 2);
          this.contextCursorLine.scale(2, 2);
-         this.contextGrid.scale(2, 2);
+         this.contextGrid.scale(2, 2);*/
          
+         
+         
+         
+         /*this.context.translate(this.width/2, this.height/2);
+         this.contextBackground.translate(this.width/2, this.height/2);
+         this.contextGuides.translate(this.width/2, this.height/2);
+         this.contextCursorLine.translate(this.width/2, this.height/2);
+         this.contextGrid.translate(this.width/2, this.height/2);
+         
+         this.context.scale(this.scale, this.scale);
+         this.contextBackground.scale(this.scale, this.scale);
+         this.contextGuides.scale(this.scale, this.scale);
+         this.contextCursorLine.scale(this.scale, this.scale);
+         this.contextGrid.scale(this.scale, this.scale);
          
          this.context.translate(-this.width/2, -this.height/2);
-         this.context.translate(this.width/(2*2), this.height/(2*2));
-         
-         this.contextBackground.translate(-this.width/2, -this.height/2);
-         this.contextBackground.translate(this.width/(2*2), this.height/(2*2));
-         
-         this.contextGuides.translate(-this.width/2, -this.height/2);
-         this.contextGuides.translate(this.width/(2*2), this.height/(2*2));
-         
-         this.contextCursorLine.translate(-this.width/2, -this.height/2);
-         this.contextCursorLine.translate(this.width/(2*2), this.height/(2*2));
-         
+         this.contextBackground.translate(-this.width/2, -this.height/2);         
+         this.contextGuides.translate(-this.width/2, -this.height/2);         
+         this.contextCursorLine.translate(-this.width/2, -this.height/2);         
          this.contextGrid.translate(-this.width/2, -this.height/2);
-         this.contextGrid.translate(this.width/(2*2), this.height/(2*2));
+         
+         // this is the actual translation in scale 1 units
+         this.context.translate(this.translation.x, this.translation.y);
+         this.contextBackground.translate(this.translation.x, this.translation.y);
+         this.contextGuides.translate(this.translation.x, this.translation.y);
+         this.contextCursorLine.translate(this.translation.x, this.translation.y);
+         this.contextGrid.translate(this.translation.x, this.translation.y);*/
+         
+         
+         
+         
+         
+         /*this.context.translate(-this.width/2 + this.width/(2*2), -this.height/2 + this.height/(2*2));
+         
+         this.contextBackground.translate(-this.width/2 + this.width/(2*2), -this.height/2 + this.height/(2*2));
+         
+         this.contextGuides.translate(-this.width/2 + this.width/(2*2), -this.height/2 + this.height/(2*2));
+         
+         this.contextCursorLine.translate(-this.width/2 + this.width/(2*2), -this.height/2 + this.height/(2*2));
+         
+         this.contextGrid.translate(-this.width/2 + this.width/(2*2), -this.height/2 + this.height/(2*2));*/
        }
      } else {
          
        /*if(this.scale * 0.5 >= this.width / totalWidth)*/ {
            
-         this.translation = {x: this.translation.x + (-this.width/2 + this.width/(2*0.5)) / this.scale, y: this.translation.y + (-this.height/2 + this.height/(2*0.5)) / this.scale};
+         //this.translation = {x: this.translation.x + (-this.width/2 + this.width/(2*0.5)) / this.scale, y: this.translation.y + (-this.height/2 + this.height/(2*0.5)) / this.scale};
            
          this.scale = this.scale * 0.5;
-         this.context.scale(0.5, 0.5);
+         /*this.context.scale(0.5, 0.5);
          this.contextBackground.scale(0.5, 0.5);
          this.contextGuides.scale(0.5, 0.5);
          this.contextCursorLine.scale(0.5, 0.5);
@@ -375,7 +469,7 @@ var CanvasComponent = React.createClass({
          this.contextCursorLine.translate(this.width/(2*0.5), this.height/(2*0.5));
          
          this.contextGrid.translate(-this.width/2, -this.height/2);
-         this.contextGrid.translate(this.width/(2*0.5), this.height/(2*0.5));
+         this.contextGrid.translate(this.width/(2*0.5), this.height/(2*0.5));*/
        }
      }
      
@@ -388,6 +482,9 @@ var CanvasComponent = React.createClass({
      this.contextGrid.translate(this.translation.x + this.width / 2, this.translation.y + this.height / 2);*/
      
      //todo: do NOT call mouse move.. call drawGuides, drawCursor and stuff like this
+     
+     this.pushTransform();
+     
      this.onMouseMove(e);
      this.drawGrid();
      this.drawWalls();
@@ -403,6 +500,14 @@ var CanvasComponent = React.createClass({
      if(this.image != null) {
        this.contextBackground.drawImage(this.image, 0, 0);
      }
+     
+     this.popTransform();
+     
+     /*this.context.restore();
+     this.contextBackground.restore();
+     this.contextGuides.restore();
+     this.contextCursorLine.restore();
+     this.contextGrid.restore();*/
    },
    onMouseDown: function(e) {
      this.panning = true;
@@ -421,7 +526,11 @@ var CanvasComponent = React.createClass({
      this.contextCursorLine = this.refs.cursorLineCanvas.getContext("2d");
      this.contextGrid = this.refs.gridCanvas.getContext("2d");
      
+     this.pushTransform();
+     
      this.drawGrid();
+     
+     this.popTransform();
      
      $(document.body).on('keydown', this.onKeyDown);
      $(document.body).on('keyup', this.onKeyUp);
@@ -442,6 +551,7 @@ var CanvasComponent = React.createClass({
      this.contextCursorLine = this.refs.cursorLineCanvas.getContext("2d");
      this.contextGrid = this.refs.gridCanvas.getContext("2d");
      
+     //todowawa: transform here
      if(this.loadedImage) {
          this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
          this.contextBackground.drawImage(this.loadedImage, 0, 0);
@@ -451,6 +561,7 @@ var CanvasComponent = React.createClass({
    },
    clearContext: function(context, canvas) {
      //context.clearRect(0, 0, canvas.width / this.scale - this.translation.x, canvas.height / this.scale - this.translation.y);
+     
      context.clearRect(-totalWidth / 2 + this.width / 2, -totalHeight / 2 + this.height / 2, totalWidth, totalHeight);
    },
    drawPoint: function (point, color, context) {
@@ -504,6 +615,9 @@ var CanvasComponent = React.createClass({
          this.contextGuides.restore();
        }
      }
+     
+     this.contextGuides.fillStyle = 'blue';
+     this.contextGuides.fillRect(450,250,100,100);
    },
    drawGrid: function(start, lineWidth, delta, steps, vertical, horizontal) {       
      start = typeof start === 'undefined' ? 0 : start;
@@ -567,6 +681,8 @@ var CanvasComponent = React.createClass({
      } else {
        // todo: this won't work for when we drag a point or something... We can't recompute all parametric lines everytime it changes... Only set state on mouse up??? Maybe...
        
+       this.pushTransform();
+       
        this.drawWalls();
        
        this.guideLines = [];
@@ -594,6 +710,8 @@ var CanvasComponent = React.createClass({
          }
        }
        this.drawGuides();
+       
+       this.popTransform();
      }
      return false;
    },
