@@ -6,8 +6,8 @@ var ReactDOM = require('react-dom');
 /*var totalWidth = 19200;
 var totalHeight = 10800;*/
 
-var totalWidth = 1000;
-var totalHeight = 600;
+var totalWidth = 10000;
+var totalHeight = 6000;
 
 //todowawa fast: check the clear rect on mouse move with panning
 
@@ -160,7 +160,7 @@ var CanvasComponent = React.createClass({
    height: 600,
    onClick : function(e)
    {
-       console.log(this.mousePosition.x + " " + this.mousePosition.y);
+       //console.log(this.mousePosition.x + " " + this.mousePosition.y);
        this.props.addPoint(this.mousePosition);
    },
    panning: false,
@@ -258,13 +258,13 @@ var CanvasComponent = React.createClass({
      var offset =  $(this.refs.planCanvas).offset();
      
      // relativeX / relativeY are in grid units and not pixels
-     console.log('no translation ' + ((e.pageX - offset.left) / this.scale));
+     //console.log('no translation ' + ((e.pageX - offset.left) / this.scale));
      /*console.log('yes translation ' + ((e.pageX - offset.left) / this.scale - this.translation.x));*/
-     console.log('just translation ' + (this.translation.x));
-     var relativeX = (e.pageX - offset.left) / this.scale + (this.width - totalWidth / this.scale) / 2  - this.translation.x;
-     var relativeY = ((offset.top - e.pageY) * -1) / this.scale + (this.height - totalHeight / this.scale) / 2  - this.translation.y;
+     //console.log('just translation ' + (this.translation.x));
+     var relativeX = (e.pageX - offset.left) / this.scale + (this.width - totalWidth / this.scale) / 2  - this.translation.x - ((this.width - totalWidth) / 2) / this.scale;
+     var relativeY = ((offset.top - e.pageY) * -1) / this.scale + (this.height - totalHeight / this.scale) / 2  - this.translation.y - ((this.height - totalHeight) / 2) / this.scale;
      
-     console.log('relative ' + relativeX + " " + relativeY);
+     //console.log('relative ' + relativeX + " " + relativeY);
      
      //this.drawPoint({x: relativeX, y: relativeY}, 'green', this.context);
      this.drawPoint({x: 450, y: 250}, 'green', this.context);
@@ -339,7 +339,7 @@ var CanvasComponent = React.createClass({
      this.mousePosition = point;
      
      this.popTransform();
-     console.log("x : " + this.mousePosition.x + "  y : " + this.mousePosition.y);
+     //console.log("x : " + this.mousePosition.x + "  y : " + this.mousePosition.y);
    },
    onKeyDown: function(e) {
      this.pushTransform();
@@ -351,8 +351,10 @@ var CanvasComponent = React.createClass({
       this.shift = true;
       this.drawGuides();
      }
+     this.popTransform();
    },
    onKeyUp: function(e) {
+    this.pushTransform();
     if(e.keyCode == 17 && this.ctrl) {
       this.ctrl = false;
       this.drawGuides();
@@ -361,7 +363,6 @@ var CanvasComponent = React.createClass({
       this.shift = false;
       this.drawGuides();
     }
-    
     this.popTransform();
    },
    onWheel: function(e) {
