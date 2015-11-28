@@ -1,6 +1,9 @@
 .canvasContainer
 {
     position: relative;
+    border-style: solid;
+    border-color: #2d9ac2;
+    border-width: 2px;
 }
 
 .canvasContainer canvas
