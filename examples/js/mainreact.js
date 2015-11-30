@@ -116,10 +116,27 @@ var MainComponent = React.createClass({
    },
    render: function() {
        return <div>
+                <ToolsComponent />
                 <CanvasComponent image={this.state.image} walls={this.state.walls} addPoint={this.addPoint} />
                 <DropZoneComponent setImage={this.setImage} />
               </div>;
    }
+});
+
+var ToolsComponent = React.createClass({
+  onChange: function(e) {
+    if(this.refs.wall.checked) {
+      alert('wall');
+    } else if(this.refs.manipulation.checked) {
+      alert('manipulation');
+    }
+  },
+  render: function() {
+    return <div>
+             <input type='radio' ref='wall' name='tool' onChange={this.onChange}></input>
+             <input type='radio' ref='manipulation' name='tool' onChange={this.onChange}></input>
+           </div>;
+  }    
 });
 
 var DropZoneComponent = React.createClass({
@@ -154,6 +171,7 @@ var CanvasComponent = React.createClass({
    width: 1440,
    height: 810,
    onClick : function(e) {
+     // todowawa: this should be in AddWallCanvasComponent
      if(e.button == 0) {
        // the mousePosition can't be the same as the last added point
        var wall = this.props.walls.length == 0 ? null : this.props.walls[this.props.walls.length - 1];
@@ -260,6 +278,7 @@ var CanvasComponent = React.createClass({
      // compute the best mousePosition with snapping
      var point = {x: relativeX, y: relativeY};
      if(this.props.walls.length > 0) {
+       // todowawa: this should be in AddWallCanvasComponent
        var wall = this.props.walls[this.props.walls.length - 1];
        // todo: 6 is the magic number...
        if(wall.points.length > 1 && getDistance(wall.points[0], {x: relativeX, y: relativeY}) < 6) {
@@ -616,15 +635,23 @@ var CanvasComponent = React.createClass({
      return false;
    },
    render: function() {
-       return <div className="canvasContainer" style={{width: this.width + "px", height: this.height + "px"}}>
-                <canvas ref="backgroundCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
-                <canvas ref="gridCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
-                <canvas ref="guidesCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
-                <canvas ref="planCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
-                <canvas ref="cursorLineCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />
-                <canvas ref="cursorCanvas" width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} onMouseMove={this.onMouseMove} onMouseLeave={this.onMouseLeave} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} onClick={this.onClick} onWheel={this.onWheel} />
-              </div>;
+     var controls = [];
+     
+     return React.createElement('div', {className: 'canvasContainer', style: {width: this.width + 'px', height: this.height + 'px'}},
+             <canvas ref='backgroundCanvas' width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />,
+             <canvas ref='gridCanvas' width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />,
+             <canvas ref='guidesCanvas' width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />,
+             <canvas ref='planCanvas' width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />,
+             <canvas ref='cursorLineCanvas' width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />,
+             <canvas ref='cursorCanvas' width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} onMouseMove={this.onMouseMove} onMouseLeave={this.onMouseLeave} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} onClick={this.onClick} onWheel={this.onWheel} />);
    }
+});
+
+//todowawa: not sure if this should be a component
+var AddWallCanvasComponent = React.createClass({
+ render : function() {
+   
+ } 
 });
 
 ReactDOM.render(
