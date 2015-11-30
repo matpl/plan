@@ -157,7 +157,11 @@ var CanvasComponent = React.createClass({
    height: 810,
    onClick : function(e)
    {
-       this.props.addPoint(this.mousePosition);
+       // the mousePosition can't be the same as the last added point
+       var wall = this.props.walls.length == 0 ? null : this.props.walls[this.props.walls.length - 1];
+       if(wall == null || wall.points.length == 0 || this.mousePosition.x != wall.points[wall.points.length - 1].x || this.mousePosition.y != wall.points[wall.points.length - 1].y) {
+         this.props.addPoint(this.mousePosition);   
+       }
    },
    panning: false,
    ctrl: false,
@@ -238,6 +242,10 @@ var CanvasComponent = React.createClass({
        
        this.drawWalls();
        this.drawGrid();
+       
+       if(this.ctrl) {
+         this.clearContext(this.contextGuides, this.refs.guidesCanvas);
+       }
      }
      
      actualMousePosition = {x: e.pageX, y: e.pageY};
@@ -386,9 +394,21 @@ var CanvasComponent = React.createClass({
    },
    onMouseUp: function(e) {
      this.panning = false;
+     
+     if(this.ctrl) {
+       this.pushTransform();
+       this.drawGuides();
+       this.popTransform();
+     }
    },
    onMouseLeave: function(e) {
      this.panning = false;
+     
+     if(this.ctrl) {
+       this.pushTransform();
+       this.drawGuides();
+       this.popTransform();
+     }
    },
    componentDidMount: function() {
      this.context = this.refs.planCanvas.getContext("2d");  
