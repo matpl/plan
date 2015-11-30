@@ -6,9 +6,8 @@ var ReactDOM = require('react-dom');
 var totalWidth = 19200;
 var totalHeight = 10800;
 
-//todowawa NOW NOW NOW : check the panning with CTRL key pressed. the guide lines don't follow
-
-
+//todowawa now now now: check offset with cursor and dotted line when panning fast... it makes no sense. Also there is some kind of offset until the release of middle mouse button...
+//todowawa: only show the guide that we snap on??? (at least be an option or something)
 //todowawa: have some kind of viewport variable for what part of the canvas is actually visible (so we don't have to do the this.scale formula every single time)
 //todowawa: check bootstrap!!!
 //todowawa: beware of automatic semi colon insertion, so put every curly brace on the same lineHeight
@@ -115,8 +114,7 @@ var MainComponent = React.createClass({
      
      this.setState(newState);
    },
-   render: function()
-   {
+   render: function() {
        return <div>
                 <CanvasComponent image={this.state.image} walls={this.state.walls} addPoint={this.addPoint} />
                 <DropZoneComponent setImage={this.setImage} />
@@ -155,13 +153,14 @@ var CanvasComponent = React.createClass({
    actualMousePosition: {x: 0, y: 0},
    width: 1440,
    height: 810,
-   onClick : function(e)
-   {
+   onClick : function(e) {
+     if(e.button == 0) {
        // the mousePosition can't be the same as the last added point
        var wall = this.props.walls.length == 0 ? null : this.props.walls[this.props.walls.length - 1];
        if(wall == null || wall.points.length == 0 || this.mousePosition.x != wall.points[wall.points.length - 1].x || this.mousePosition.y != wall.points[wall.points.length - 1].y) {
          this.props.addPoint(this.mousePosition);   
        }
+     }
    },
    panning: false,
    ctrl: false,
@@ -254,10 +253,9 @@ var CanvasComponent = React.createClass({
      
      var relativeX = (e.pageX - offset.left) / this.scale + (this.width - totalWidth / this.scale) / 2  - this.translation.x - ((this.width - totalWidth) / 2) / this.scale;
      var relativeY = ((offset.top - e.pageY) * -1) / this.scale + (this.height - totalHeight / this.scale) / 2  - this.translation.y - ((this.height - totalHeight) / 2) / this.scale;
-     
     
-    this.contextCursor.clearRect(0, 0, this.refs.cursorCanvas.width, this.refs.cursorCanvas.height);
-    this.clearContext(this.contextCursorLine, this.refs.cursorLineCanvas);
+     this.contextCursor.clearRect(0, 0, this.refs.cursorCanvas.width, this.refs.cursorCanvas.height);
+     this.clearContext(this.contextCursorLine, this.refs.cursorLineCanvas);
     
      // compute the best mousePosition with snapping
      var point = {x: relativeX, y: relativeY};
@@ -288,7 +286,7 @@ var CanvasComponent = React.createClass({
              // snap to guide lines
              closestPoint = getClosestPoint(this.guideLines, point, 6);
            }
-           
+          
            if(closestPoint != null) {
              point = closestPoint;
            }
@@ -313,11 +311,11 @@ var CanvasComponent = React.createClass({
      this.contextCursor.lineWidth = "2";
      this.contextCursor.strokeStyle = '#05729a';
      this.contextCursor.beginPath();
-     
+    
      // take the transformed point and get the untransformed equivalent (reverse equation of the relativeX / relativeY)
      var centerX = (point.x + ((this.width - totalWidth) / 2) / this.scale + this.translation.x - (this.width - totalWidth / this.scale) / 2) * this.scale;
      var centerY = (point.y + ((this.height - totalHeight) / 2) / this.scale + this.translation.y - (this.height - totalHeight / this.scale) / 2) * this.scale;
-     
+    
      this.contextCursor.moveTo(centerX, centerY - 5);
      this.contextCursor.lineTo(centerX, centerY + 5);
      this.contextCursor.stroke();
@@ -326,9 +324,9 @@ var CanvasComponent = React.createClass({
      this.contextCursor.lineTo(centerX + 5, centerY);
      this.contextCursor.stroke();
      this.contextCursor.restore();
-     
+    
      this.mousePosition = point;
-     
+    
      this.popTransform();
    },
    onKeyDown: function(e) {
@@ -390,23 +388,39 @@ var CanvasComponent = React.createClass({
      this.popTransform();
    },
    onMouseDown: function(e) {
-     this.panning = true;
+     if(e.button == 1) {
+       e.stopPropagation();
+       e.preventDefault();
+       this.panning = true;
+     }
    },
    onMouseUp: function(e) {
-     this.panning = false;
+     if(e.button == 1) {
+       this.panning = false;
      
-     if(this.ctrl) {
        this.pushTransform();
-       this.drawGuides();
+       if(this.ctrl) {
+         this.drawGuides();
+       }
+       this.drawWalls();
+       this.drawGrid();
+       //todowawa: don't call onmousemove directly, but a function or something (that is called by onmousemove). This will remove the unnecessary pop / push
+       this.onMouseMove(e);
        this.popTransform();
      }
    },
    onMouseLeave: function(e) {
-     this.panning = false;
+     if(e.button == 1) {
+       this.panning = false;
      
-     if(this.ctrl) {
        this.pushTransform();
-       this.drawGuides();
+       if(this.ctrl) {
+         this.drawGuides();
+       }
+       this.drawWalls();
+       this.drawGrid();
+       //todowawa: don't call onmousemove directly, but a function or something (that is called by onmousemove). This will remove the unnecessary pop / push
+       this.onMouseMove(e);
        this.popTransform();
      }
    },
