@@ -32,9 +32,9 @@ function getIntersection(parametricLine, parametricLine2) {
     return null;
   } else {
     var t = ((parametricLine.x0 - parametricLine2.x0) * s.y - (parametricLine.y0 - parametricLine2.y0)  * s.x) / res;
-    
+
     return {x: parametricLine2.x0 + t*r.x, y: parametricLine2.y0 + t*r.y};
-  }    
+  }
 }
 
 function getParametricLine(point, point2, minX, maxX, minY, maxY) {
@@ -46,12 +46,12 @@ function getParametricLine(point, point2, minX, maxX, minY, maxY) {
   line.x1y0 = line.x1 * line.y0;
   line.norm = Math.sqrt(Math.pow(line.x1mx0, 2) + Math.pow(line.y1my0, 2));
   line.normPow = Math.pow(line.x1mx0, 2) + Math.pow(line.y1my0, 2);
-  
+
   // get the 2 points of the line to draw on the canvas
   var canvasLines = [{x0: minX, y0: minY, x1: maxX, y1: minY}, {x0: minX, y0: minY, x1: minX, y1: maxY}, {x0: minX, y0: maxY, x1: maxX, y1: maxY}, {x0: maxX, y0: minY, x1: maxX, y1: maxY}];
   var canvasPoints = [];
   for(var i = 0; i < canvasLines.length; i++) {
-    var intersection = getIntersection(line, canvasLines[i]); 
+    var intersection = getIntersection(line, canvasLines[i]);
     if(intersection != null && intersection.x >= minX && intersection.x <= maxX && intersection.y >= minY && intersection.y <= maxY && (canvasPoints.length == 0 || canvasPoints[0] != intersection.x || canvasPoints[0].y != intersection.y)) {
       canvasPoints.push(intersection);
       if(canvasPoints.length == 2) {
@@ -59,10 +59,10 @@ function getParametricLine(point, point2, minX, maxX, minY, maxY) {
       }
     }
   }
-  
+
   line.p0 = canvasPoints[0];
   line.p1 = canvasPoints[1];
-  
+
   return line;
 }
 
@@ -71,17 +71,17 @@ function getClosestPoint(parametricLines, point, closestDistance) {
   var currentPoint = null;
   for(var i = 0; i < parametricLines.length; i++) {
     var dist = Math.abs(parametricLines[i].y0my1 * point.x + parametricLines[i].x1mx0 * point.y + (parametricLines[i].x0y1 - parametricLines[i].x1y0)) / parametricLines[i].norm;
-    
+
     if(dist <= closestDistance && (currentDist == -1 || dist < currentDist)) {
       // scalar projection
       var scalar = (parametricLines[i].x1mx0 * (point.x - parametricLines[i].x0) + parametricLines[i].y1my0 * (point.y - parametricLines[i].y0)) / parametricLines[i].normPow;
       var newX = scalar * parametricLines[i].x1mx0 + parametricLines[i].x0;
       var newY = scalar * parametricLines[i].y1my0 + parametricLines[i].y0;
-     
+
       currentDist = dist;
       currentPoint = {x: newX, y: newY};
     }
-  }  
+  }
   return currentPoint;
 }
 
@@ -93,7 +93,7 @@ var MainComponent = React.createClass({
    },
    setImage: function(url)
    {
-     this.setState({image: url});  
+     this.setState({image: url});
    },
    addPoint: function(point)
    {
@@ -102,16 +102,16 @@ var MainComponent = React.createClass({
      {
          newState.walls.push({id: 1, points: []});
      }
-     
+
      var wall = newState.walls[newState.walls.length - 1];
-     
+
      wall.points.push({id: wall.points.length + 1, x: point.x, y: point.y});
      if(wall.points.length > 1 && wall.points[0].x == wall.points[wall.points.length - 1].x && wall.points[0].y == wall.points[wall.points.length - 1].y)
      {
        // contour is done
        newState.walls.push({id: newState.walls.length + 1, points: []});
      }
-     
+
      this.setState(newState);
    },
    render: function() {
@@ -136,7 +136,7 @@ var ToolsComponent = React.createClass({
              <input type='radio' ref='wall' name='tool' onChange={this.onChange}></input>
              <input type='radio' ref='manipulation' name='tool' onChange={this.onChange}></input>
            </div>;
-  }    
+  }
 });
 
 var DropZoneComponent = React.createClass({
@@ -148,14 +148,14 @@ var DropZoneComponent = React.createClass({
    onDrop: function(e) {
      e.stopPropagation();
      e.preventDefault();
-     
+
      var files = e.dataTransfer.files;
      if(files.length == 1) {
        for (var i = 0; i < files.length; i++) {
          if (!files[i].type.match('image.*')) {
            continue;
          }
-       
+
          this.props.setImage(URL.createObjectURL(files[i]));
        }
      }
@@ -176,7 +176,7 @@ var CanvasComponent = React.createClass({
        // the mousePosition can't be the same as the last added point
        var wall = this.props.walls.length == 0 ? null : this.props.walls[this.props.walls.length - 1];
        if(wall == null || wall.points.length == 0 || this.mousePosition.x != wall.points[wall.points.length - 1].x || this.mousePosition.y != wall.points[wall.points.length - 1].y) {
-         this.props.addPoint(this.mousePosition);   
+         this.props.addPoint(this.mousePosition);
        }
      }
    },
@@ -188,31 +188,31 @@ var CanvasComponent = React.createClass({
    image: null,
    guideLines : [],
    guidePoints : [],
-   pushTransform : function() {  
+   pushTransform : function() {
      this.context.save();
      this.contextBackground.save();
      this.contextGuides.save();
      this.contextCursorLine.save();
      this.contextGrid.save();
-       
+
      this.context.translate(this.width/2, this.height/2);
      this.contextBackground.translate(this.width/2, this.height/2);
      this.contextGuides.translate(this.width/2, this.height/2);
      this.contextCursorLine.translate(this.width/2, this.height/2);
      this.contextGrid.translate(this.width/2, this.height/2);
-         
+
      this.context.scale(this.scale, this.scale);
      this.contextBackground.scale(this.scale, this.scale);
      this.contextGuides.scale(this.scale, this.scale);
      this.contextCursorLine.scale(this.scale, this.scale);
      this.contextGrid.scale(this.scale, this.scale);
-         
+
      this.context.translate(-this.width/2, -this.height/2);
-     this.contextBackground.translate(-this.width/2, -this.height/2);         
-     this.contextGuides.translate(-this.width/2, -this.height/2);         
-     this.contextCursorLine.translate(-this.width/2, -this.height/2);         
+     this.contextBackground.translate(-this.width/2, -this.height/2);
+     this.contextGuides.translate(-this.width/2, -this.height/2);
+     this.contextCursorLine.translate(-this.width/2, -this.height/2);
      this.contextGrid.translate(-this.width/2, -this.height/2);
-         
+
      // this is the actual translation in scale 1 units
      this.context.translate(this.translation.x, this.translation.y);
      this.contextBackground.translate(this.translation.x, this.translation.y);
@@ -237,7 +237,7 @@ var CanvasComponent = React.createClass({
      } else if(firstVisibleX < (-totalWidth + this.width) / 2) {
        this.translation.x = this.translation.x + (firstVisibleX - (-totalWidth + this.width) / 2);
      }
-       
+
      // top left corner of the visible
      var firstVisibleY = (this.height - totalHeight / this.scale) / 2  - this.translation.y - ((this.height - totalHeight) / 2) / this.scale;
      // top left corner of the visible + the visible height
@@ -252,29 +252,29 @@ var CanvasComponent = React.createClass({
      this.pushTransform();
      // todo: do the panning on the whole window. the click has to be in the canvas, but the drag can be anywhere.
      if(this.panning) {
-         
+
        // translation is in grid units and not pixels
-       this.translation = {x: this.translation.x + (e.pageX - actualMousePosition.x) / this.scale, y: this.translation.y + (e.pageY - actualMousePosition.y) / this.scale};
+       this.translation = {x: this.translation.x + (e.pageX - this.actualMousePosition.x) / this.scale, y: this.translation.y + (e.pageY - this.actualMousePosition.y) / this.scale};
        this.checkBounds();
-       
+
        this.drawWalls();
        this.drawGrid();
-       
+
        if(this.ctrl) {
          this.clearContext(this.contextGuides, this.refs.guidesCanvas);
        }
      }
-     
-     actualMousePosition = {x: e.pageX, y: e.pageY};
-       
+
+     this.actualMousePosition = {x: e.pageX, y: e.pageY};
+
      var offset =  $(this.refs.planCanvas).offset();
-     
+
      var relativeX = (e.pageX - offset.left) / this.scale + (this.width - totalWidth / this.scale) / 2  - this.translation.x - ((this.width - totalWidth) / 2) / this.scale;
      var relativeY = ((offset.top - e.pageY) * -1) / this.scale + (this.height - totalHeight / this.scale) / 2  - this.translation.y - ((this.height - totalHeight) / 2) / this.scale;
-    
+
      this.contextCursor.clearRect(0, 0, this.refs.cursorCanvas.width, this.refs.cursorCanvas.height);
      this.clearContext(this.contextCursorLine, this.refs.cursorLineCanvas);
-    
+
      // compute the best mousePosition with snapping
      var point = {x: relativeX, y: relativeY};
      if(this.props.walls.length > 0) {
@@ -286,7 +286,7 @@ var CanvasComponent = React.createClass({
        } else {
          if(this.ctrl) {
            var closestPoint = null;
-           
+
            // snap to guide points
            if(this.shift) {
              var minDist = -1;
@@ -299,19 +299,19 @@ var CanvasComponent = React.createClass({
                }
              }
            }
-           
+
            // todo: 6 is the magic number
            if(closestPoint == null) {
              // snap to guide lines
              closestPoint = getClosestPoint(this.guideLines, point, 6);
            }
-          
+
            if(closestPoint != null) {
              point = closestPoint;
            }
          }
        }
-       
+
        if(wall.points.length > 0) {
          this.contextCursorLine.save();
          this.contextCursorLine.setLineDash([2, 2]);
@@ -324,17 +324,17 @@ var CanvasComponent = React.createClass({
          this.contextCursorLine.restore();
        }
      }
-     
+
      // draw cursor
      this.contextCursor.save();
      this.contextCursor.lineWidth = "2";
      this.contextCursor.strokeStyle = '#05729a';
      this.contextCursor.beginPath();
-    
+
      // take the transformed point and get the untransformed equivalent (reverse equation of the relativeX / relativeY)
      var centerX = (point.x + ((this.width - totalWidth) / 2) / this.scale + this.translation.x - (this.width - totalWidth / this.scale) / 2) * this.scale;
      var centerY = (point.y + ((this.height - totalHeight) / 2) / this.scale + this.translation.y - (this.height - totalHeight / this.scale) / 2) * this.scale;
-    
+
      this.contextCursor.moveTo(centerX, centerY - 5);
      this.contextCursor.lineTo(centerX, centerY + 5);
      this.contextCursor.stroke();
@@ -343,9 +343,9 @@ var CanvasComponent = React.createClass({
      this.contextCursor.lineTo(centerX + 5, centerY);
      this.contextCursor.stroke();
      this.contextCursor.restore();
-    
+
      this.mousePosition = point;
-    
+
      this.popTransform();
    },
    onKeyDown: function(e) {
@@ -376,12 +376,12 @@ var CanvasComponent = React.createClass({
      // todo: make it smooth and have a max / min zoom
      e.stopPropagation();
      e.preventDefault();
-     
+
      if(e.deltaY < 0) {
        if(this.scale < 10) {
          this.scale = this.scale * 2;
        }
-     } else {  
+     } else {
        if(this.scale * 0.5 >= this.width / totalWidth) {
          this.scale = this.scale * 0.5;
        }
@@ -389,21 +389,21 @@ var CanvasComponent = React.createClass({
      this.pushTransform();
      this.checkBounds();
      this.popTransform();
-     
+
      //todowawa: don't call onmousemove directly, but a function or something (that is called by onmousemove). This will remove the unnecessary pop / push
      this.onMouseMove(e);
-     
+
      this.pushTransform();
      this.drawGrid();
      this.drawWalls();
-     
+
      this.drawGuides();
-     
+
      this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
      if(this.image != null) {
        this.contextBackground.drawImage(this.image, 0, 0);
      }
-     
+
      this.popTransform();
    },
    onMouseDown: function(e) {
@@ -416,7 +416,7 @@ var CanvasComponent = React.createClass({
    onMouseUp: function(e) {
      if(e.button == 1) {
        this.panning = false;
-     
+
        this.pushTransform();
        if(this.ctrl) {
          this.drawGuides();
@@ -431,7 +431,7 @@ var CanvasComponent = React.createClass({
    onMouseLeave: function(e) {
      if(e.button == 1) {
        this.panning = false;
-     
+
        this.pushTransform();
        if(this.ctrl) {
          this.drawGuides();
@@ -444,19 +444,19 @@ var CanvasComponent = React.createClass({
      }
    },
    componentDidMount: function() {
-     this.context = this.refs.planCanvas.getContext("2d");  
-     this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
+     this.context = this.refs.planCanvas.getContext("2d");
+     this.contextBackground = this.refs.backgroundCanvas.getContext("2d");
      this.contextGuides = this.refs.guidesCanvas.getContext("2d");
      this.contextCursor = this.refs.cursorCanvas.getContext("2d");
      this.contextCursorLine = this.refs.cursorLineCanvas.getContext("2d");
      this.contextGrid = this.refs.gridCanvas.getContext("2d");
-     
+
      this.pushTransform();
-     
+
      this.drawGrid();
-     
+
      this.popTransform();
-     
+
      $(document.body).on('keydown', this.onKeyDown);
      $(document.body).on('keyup', this.onKeyUp);
    },
@@ -465,14 +465,14 @@ var CanvasComponent = React.createClass({
      $(document.body).off('keyup', this.onKeyUp);
    },
    componentDidUpdate: function() {
-     this.context = this.refs.planCanvas.getContext("2d");  
-     
-     this.contextBackground = this.refs.backgroundCanvas.getContext("2d");  
+     this.context = this.refs.planCanvas.getContext("2d");
+
+     this.contextBackground = this.refs.backgroundCanvas.getContext("2d");
      this.contextGuides = this.refs.guidesCanvas.getContext("2d");
      this.contextCursor = this.refs.cursorCanvas.getContext("2d");
      this.contextCursorLine = this.refs.cursorLineCanvas.getContext("2d");
      this.contextGrid = this.refs.gridCanvas.getContext("2d");
-     
+
      //todowawa: transform here
      if(this.loadedImage) {
          this.clearContext(this.contextBackground, this.refs.backgroundCanvas);
@@ -483,7 +483,7 @@ var CanvasComponent = React.createClass({
    },
    clearContext: function(context, canvas) {
      //context.clearRect(0, 0, canvas.width / this.scale - this.translation.x, canvas.height / this.scale - this.translation.y);
-     
+
      context.clearRect(-totalWidth / 2 + this.width / 2, -totalHeight / 2 + this.height / 2, totalWidth, totalHeight);
    },
    drawPoint: function (point, color, context) {
@@ -504,7 +504,7 @@ var CanvasComponent = React.createClass({
        if(j == 0) {
          this.context.moveTo(wall.points[j].x, wall.points[j].y);
        } else {
-         this.context.lineTo(wall.points[j].x, wall.points[j].y);  
+         this.context.lineTo(wall.points[j].x, wall.points[j].y);
        }
      }
      this.context.stroke();
@@ -518,7 +518,7 @@ var CanvasComponent = React.createClass({
        for(var j = 0; j < wall.points.length; j++) {
          this.drawPoint(wall.points[j], '#2d9ac2', this.context);
        }
-         
+
        this.drawLine(wall, '#2d9ac2');
      }
    },
@@ -538,7 +538,7 @@ var CanvasComponent = React.createClass({
        }
      }
    },
-   drawGrid: function(start, lineWidth, delta, steps, vertical, horizontal) {       
+   drawGrid: function(start, lineWidth, delta, steps, vertical, horizontal) {
      start = typeof start === 'undefined' ? 0 : start;
      lineWidth = typeof lineWidth === 'undefined' ? 0.4 : lineWidth;
      delta = typeof delta === 'undefined' ? 25 : delta;
@@ -552,9 +552,9 @@ var CanvasComponent = React.createClass({
          maxX = totalWidth / 25;
          maxY = totalHeight / 25;
      }
-     
+
      var max = Math.max(maxX, maxY);
-     
+
      for(var i = 0; i < max; i++) {
        if(i != 0) {
          this.contextGrid.save();
@@ -592,24 +592,24 @@ var CanvasComponent = React.createClass({
          this.loadedImage = img;
          this.width = img.width;
          this.height = img.height;
-         
+
          // only rerender when the image is loaded
-         this.forceUpdate();            
+         this.forceUpdate();
        }
        img.onload = imgLoad.bind(this);
      } else {
        // todo: this won't work for when we drag a point or something... We can't recompute all parametric lines everytime it changes... Only set state on mouse up??? Maybe...
-       
+
        this.pushTransform();
-       
+
        this.drawWalls();
-       
+
        this.guideLines = [];
        this.guidePoints = [];
-       
+
        for(var i = 0; i < this.props.walls.length; i++) {
          var wall = this.props.walls[i];
-         
+
          for(var j = 0; j < wall.points.length; j++) {
            // todo: do not create collinear lines
            if(j > 0) {
@@ -619,7 +619,7 @@ var CanvasComponent = React.createClass({
            this.guideLines.push(getParametricLine(wall.points[j], {x: wall.points[j].x, y: wall.points[j].y + 1}, -totalWidth / 2 + this.width / 2, totalWidth / 2 + this.width / 2, -totalHeight / 2 + this.height / 2, totalHeight / 2 + this.height / 2));
          }
        }
-       
+
        for(var i = 1; i < this.guideLines.length; i++) {
          for(var j = 0; j < i; j++) {
            var point = getIntersection(this.guideLines[i], this.guideLines[j]);
@@ -629,14 +629,14 @@ var CanvasComponent = React.createClass({
          }
        }
        this.drawGuides();
-       
+
        this.popTransform();
      }
      return false;
    },
    render: function() {
      var controls = [];
-     
+
      return React.createElement('div', {className: 'canvasContainer', style: {width: this.width + 'px', height: this.height + 'px'}},
              <canvas ref='backgroundCanvas' width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />,
              <canvas ref='gridCanvas' width={this.width} height={this.height} style={{width: this.width + "px", height: this.height + "px"}} />,
@@ -650,8 +650,8 @@ var CanvasComponent = React.createClass({
 //todowawa: not sure if this should be a component
 var AddWallCanvasComponent = React.createClass({
  render : function() {
-   
- } 
+
+ }
 });
 
 ReactDOM.render(
