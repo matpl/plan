@@ -1,7 +1,9 @@
 // main.js
-var $ = require('jquery');
+var $ = window.jQuery = require('jquery');
 var React = require('react');
 var ReactDOM = require('react-dom');
+
+var bootstrap = require('bootstrap');
 
 var totalWidth = 19200;
 var totalHeight = 10800;
@@ -125,6 +127,7 @@ var MainComponent = React.createClass({
 
 var ToolsComponent = React.createClass({
   onChange: function(e) {
+    alert('yo');
     if(this.refs.wall.checked) {
       alert('wall');
     } else if(this.refs.manipulation.checked) {
@@ -132,9 +135,13 @@ var ToolsComponent = React.createClass({
     }
   },
   render: function() {
-    return <div>
-             <input type='radio' ref='wall' name='tool' onChange={this.onChange}></input>
-             <input type='radio' ref='manipulation' name='tool' onChange={this.onChange}></input>
+    return <div className='btn-group' data-toggle='buttons'>
+             <label className='btn btn-default'>
+               <input type='radio' ref='wall' name='tool' onChange={this.onChange} value='wall'></input>Wall
+             </label>
+             <label className='btn btn-default'>
+               <input type='radio' ref='manipulation' name='tool' onChange={this.onChange} value='manipulation'></input>Manipulation
+             </label>
            </div>;
   }
 });
