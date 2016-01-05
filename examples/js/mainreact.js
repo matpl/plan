@@ -267,45 +267,41 @@ class ThreeView extends React.Component {
 			//targetList.push(mesh);
 		  }
 
+      for(var j = 1; j < this.props.walls.length; j++) {
+			  for(var i = 0; i < this.props.walls[j].points.length - 1; i++) {
+  				var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4, vertexColors: THREE.FaceColors} );
 
+  				var a = this.props.walls[j].points[i+1].x - this.props.walls[j].points[i].x;
+  				var b = this.props.walls[j].points[i+1].y - this.props.walls[j].points[i].y;
 
-		/*for(var j = 0; j < this.floorPlan.wallChains.length - 1; j++)
-		{
-			for(var i = 0; i < this.floorPlan.wallChains[j].points.length - 1; i++)
-			{
-				var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4, vertexColors: THREE.FaceColors} );
+  				var distance = Math.sqrt(a*a + b*b);
+  				var angle = Math.atan2(a, b);
 
-				var a = this.floorPlan.wallChains[j].points[i+1].x - this.floorPlan.wallChains[j].points[i].x;
-				var b = this.floorPlan.wallChains[j].points[i+1].y - this.floorPlan.wallChains[j].points[i].y;
+  				var pivot1 = new THREE.Object3D();
 
-				var distance = Math.sqrt(a*a + b*b);
-				var angle = Math.atan2(a, b);
+  				var geometry = new THREE.BoxGeometry( 2, 100, distance);
 
-				var pivot1 = new THREE.Object3D();
+  				mesh = new THREE.Mesh( geometry, material );
 
-				var geometry = new THREE.BoxGeometry( 2, 100, distance);
+  				mesh.position.x = 0;
+  				mesh.position.y = 0;
 
-				mesh = new THREE.Mesh( geometry, material );
+  				// has to be half of the length
+  				mesh.position.z = 0 - distance / 2.0;
 
-				mesh.position.x = 0;
-				mesh.position.y = 0;
+  				pivot1.rotation.y = -angle;
 
-				// has to be half of the length
-				mesh.position.z = 0 - distance / 2.0;
+  				pivot1.position.x = this.props.walls[j].points[i].x - offsetX;
+  				pivot1.position.z = -(this.props.walls[j].points[i].y) + offsetY;
 
-				pivot1.rotation.y = -angle;
+  				pivot1.add(mesh);
 
-				pivot1.position.x = this.floorPlan.wallChains[j].points[i].x - offsetX;
-				pivot1.position.z = -(this.floorPlan.wallChains[j].points[i].y) + offsetY;
+  				this.scene.add(pivot1);
 
-				pivot1.add(mesh);
-
-				scene.add(pivot1);
-
-				//todowawa: targetList and scene are in the other file
-				targetList.push(mesh);
-			}
-		}*/
+  				//todowawa: targetList and scene are in the other file
+  				//targetList.push(mesh);
+  			}
+  		}
 
 
 
