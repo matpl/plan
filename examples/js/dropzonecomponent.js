@@ -2,6 +2,12 @@
 import React from 'react';
 
 export default class DropZoneComponent extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.onDragOver = this.onDragOver.bind(this);
+    this.onDrop = this.onDrop.bind(this);
+  }
    onDragOver(e) {
      e.stopPropagation();
      e.preventDefault();
