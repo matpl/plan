@@ -66,10 +66,10 @@ export default class ThreeView extends React.Component {
 		  var minY = Number.MAX_VALUE;
 
 		  for(var i = 0; i < this.props.walls[0].points.length - 1; i++) {
-			  maxX = Math.max(this.props.walls[0].points[i].x, maxX);
+			  maxX = Math.max(this.props.walls[0].points[i].x * -1, maxX);
 			  maxY = Math.max(this.props.walls[0].points[i].y, maxY);
 
-			  minX = Math.min(this.props.walls[0].points[i].x, minX);
+			  minX = Math.min(this.props.walls[0].points[i].x * -1, minX);
 			  minY = Math.min(this.props.walls[0].points[i].y, minY);
 		  }
 
@@ -83,14 +83,14 @@ export default class ThreeView extends React.Component {
 			  var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4, vertexColors: THREE.FaceColors} );
 
 			  if(i == 0) {
-				  totalX += this.props.walls[0].points[i].x;
+				  totalX += this.props.walls[0].points[i].x * -1;
 				  totalY += this.props.walls[0].points[i].y;
 			  }
-			  totalX += this.props.walls[0].points[i+1].x;
+			  totalX += this.props.walls[0].points[i+1].x * -1;
 			  totalY += this.props.walls[0].points[i+1].y;
 
 
-			  var a = this.props.walls[0].points[i+1].x - this.props.walls[0].points[i].x;
+			  var a = this.props.walls[0].points[i+1].x * -1 - this.props.walls[0].points[i].x * -1;
 			  var b = this.props.walls[0].points[i+1].y - this.props.walls[0].points[i].y;
 
 			  var distance = Math.sqrt(a*a + b*b);
@@ -110,7 +110,7 @@ export default class ThreeView extends React.Component {
 
 			  pivot1.rotation.y = -angle;
 
-			  pivot1.position.x = this.props.walls[0].points[i].x - offsetX;
+			  pivot1.position.x = this.props.walls[0].points[i].x * -1 - offsetX;
 		  	pivot1.position.z = -(this.props.walls[0].points[i].y) + offsetY;
 
 		  	pivot1.add(mesh);
@@ -125,7 +125,7 @@ export default class ThreeView extends React.Component {
 			  for(var i = 0; i < this.props.walls[j].points.length - 1; i++) {
   				var material = new THREE.MeshLambertMaterial( {color: 0xc9c8c4, vertexColors: THREE.FaceColors} );
 
-  				var a = this.props.walls[j].points[i+1].x - this.props.walls[j].points[i].x;
+  				var a = this.props.walls[j].points[i+1].x * -1 - this.props.walls[j].points[i].x * -1;
   				var b = this.props.walls[j].points[i+1].y - this.props.walls[j].points[i].y;
 
   				var distance = Math.sqrt(a*a + b*b);
@@ -145,7 +145,7 @@ export default class ThreeView extends React.Component {
 
   				pivot1.rotation.y = -angle;
 
-  				pivot1.position.x = this.props.walls[j].points[i].x - offsetX;
+  				pivot1.position.x = this.props.walls[j].points[i].x * -1 - offsetX;
   				pivot1.position.z = -(this.props.walls[j].points[i].y) + offsetY;
 
   				pivot1.add(mesh);
@@ -169,9 +169,9 @@ export default class ThreeView extends React.Component {
 		    var rectShape = new THREE.Shape();
 		    for(var i = 0; i < this.props.walls[0].points.length; i++) {
 			    if(i == 0) {
-			  	  rectShape.moveTo( this.props.walls[0].points[i].x - offsetX, this.props.walls[0].points[i].y - offsetY);
+			  	  rectShape.moveTo( this.props.walls[0].points[i].x * -1 - offsetX, this.props.walls[0].points[i].y - offsetY);
 		  	  } else {
-	  			  rectShape.lineTo( this.props.walls[0].points[i].x - offsetX, this.props.walls[0].points[i].y - offsetY);
+	  			  rectShape.lineTo( this.props.walls[0].points[i].x * -1 - offsetX, this.props.walls[0].points[i].y - offsetY);
   			  }
 		    }
 
