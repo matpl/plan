@@ -16,7 +16,7 @@ export default class ThreeView extends React.Component {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(renderWidth, renderHeight);
     this.renderer.shadowMap.enabled	= true;
-    this.renderer.shadowMap.type = THREE.BasicShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 	  //this.renderer.shadowMapType 		= THREE.PCFSoftShadowMap;
 
     //var light = new THREE.AmbientLight( 0xc0c0c0 ); // soft white light
@@ -87,6 +87,11 @@ export default class ThreeView extends React.Component {
     spotLight.castShadow = true;
     spotLight.shadowCameraNear = 1;
     spotLight.shadowCameraFar = 1000;
+    spotLight.shadowMapWidth = 2048;
+    spotLight.shadowMapHeight = 2048;
+
+    this.movingLight = spotLight;
+    this.time = 0;
     //spotLight.shadowBias = 0.01;
     //var spotLight = new THREE.PointLight(0x33ff00, 1, 1000);
     //spotLight.castShadow = true;
@@ -97,10 +102,12 @@ export default class ThreeView extends React.Component {
     spotLight.position.set( 75, 200, 0 );
     this.scene.add(spotLight);
 
-    var spotLight2 = new THREE.PointLight( 0x33ff00, 1, 1000 );
+    var spotLight2 = new THREE.PointLight( 0xffffff, 1, 1000 );
     spotLight2.castShadow = true;
     spotLight2.shadowCameraNear = 1;
     spotLight2.shadowCameraFar = 1000;
+    spotLight2.shadowMapWidth = 2048;
+    spotLight2.shadowMapHeight = 2048;
     //spotLight.shadowBias = 0.01;
     //var spotLight = new THREE.PointLight(0x33ff00, 1, 1000);
     //spotLight.castShadow = true;
@@ -115,11 +122,11 @@ export default class ThreeView extends React.Component {
     //spotTarget.position.set(0, 150, 1000);
     //spotLight.target = spotTarget;
 
-    var headMaterial = new THREE.MeshPhongMaterial( { color: 0xff3300, specular: 0x555555, shininess: 30 } );
+    var headMaterial = new THREE.MeshPhongMaterial( { color: 0xff3300, specular: 0x555555, shininess: 4 } );
     var sphere2 = new THREE.Mesh(
 		new THREE.SphereGeometry( 16, 32, 16 ), new THREE.MeshPhongMaterial( {
       color: 0xff0000,
-      shininess: 50,
+      shininess: 4,
       specular: 0x222222,
       shading: THREE.SmoothShading
     } ) );
@@ -133,7 +140,7 @@ export default class ThreeView extends React.Component {
     var sphere3 = new THREE.Mesh(
 		new THREE.SphereGeometry( 16, 32, 16 ), new THREE.MeshPhongMaterial( {
       color: 0xff0000,
-      shininess: 50,
+      shininess: 4,
       specular: 0x222222,
       shading: THREE.SmoothShading
     } ) );
@@ -207,6 +214,10 @@ export default class ThreeView extends React.Component {
     this.controls.update();
     this.renderer.render(this.scene,this.camera);
     window.requestAnimationFrame(this.animate.bind(this));
+
+    this.time = (this.time + 1) % 360;
+    this.movingLight.position.x = 150 * Math.cos(this.time * (Math.PI / 180));
+    this.movingLight.position.z = 150 * Math.sin(this.time * (Math.PI / 180));
   }
   componentDidMount() {
     ReactDOM.findDOMNode(this).appendChild(this.renderer.domElement);
@@ -240,7 +251,7 @@ export default class ThreeView extends React.Component {
 		  var totalY = 0;
       var mesh;
 		  for(var i = 0; i < this.props.walls[0].points.length - 1; i++) {
-			  var material = new THREE.MeshPhongMaterial( { color: 0xff3300, specular: 0x555555, shininess: 30, shading: THREE.SmoothShading } );
+			  var material = new THREE.MeshPhongMaterial( { color: 0x0c474f, specular: 0x555555, shininess: 4, shading: THREE.SmoothShading } );
 
 			  if(i == 0) {
 				  totalX += this.props.walls[0].points[i].x * -1;
@@ -258,12 +269,12 @@ export default class ThreeView extends React.Component {
 
 			  var pivot1 = new THREE.Object3D();
 
-			  var geometry = new THREE.BoxGeometry( 2, 500, distance);
+			  var geometry = new THREE.BoxGeometry( 2, 100, distance);
 
 			  mesh = new THREE.Mesh( geometry, material );
 
 			  mesh.position.x = 0;
-			  mesh.position.y = -100;
+			  mesh.position.y = 0;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
 
@@ -283,7 +294,7 @@ export default class ThreeView extends React.Component {
 			//targetList.push(mesh);
 		  }
 
-      var objectMaterial = new THREE.MeshPhongMaterial( { color: 0xff3300, specular: 0x555555, shininess: 30 } );
+      var objectMaterial = new THREE.MeshPhongMaterial( { color: 0xff3300, specular: 0x555555, shininess: 4 } );
       var objectGeometry = new THREE.TorusGeometry( 1.5, 0.4, 8, 16 );
       var mesh = new THREE.Mesh( objectGeometry, objectMaterial );
       mesh.position.x = 0;
@@ -293,7 +304,7 @@ export default class ThreeView extends React.Component {
 
       for(var j = 1; j < this.props.walls.length; j++) {
 			  for(var i = 0; i < this.props.walls[j].points.length - 1; i++) {
-  				var material = new THREE.MeshPhongMaterial( { color: 0xff3300, specular: 0x555555, shininess: 30 } );
+  				var material = new THREE.MeshPhongMaterial( { color: 0x0c474f, specular: 0x555555, shininess: 4 } );
 
   				var a = this.props.walls[j].points[i+1].x * -1 - this.props.walls[j].points[i].x * -1;
   				var b = this.props.walls[j].points[i+1].y - this.props.walls[j].points[i].y;
@@ -338,7 +349,7 @@ export default class ThreeView extends React.Component {
 
 
       if(this.props.walls.length > 1) {
-		    var material = new THREE.MeshPhongMaterial( { color: 0xff3300, specular: 0x555555, shininess: 30 } );
+		    var material = new THREE.MeshPhongMaterial( { color: 0xff3300, specular: 0x555555, shininess: 4 } );
 		    material.side = THREE.DoubleSide;
 		    var rectShape = new THREE.Shape();
 		    for(var i = 0; i < this.props.walls[0].points.length; i++) {
