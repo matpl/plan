@@ -5,6 +5,7 @@ export default class ThreeView extends React.Component {
   constructor(props) {
     super(props);
     this.camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 );
+    //this.camera = new THREE.OrthographicCamera( window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 5000 );
     this.camera.position.z = 0;
     this.camera.position.y = 800;
     this.scene = new THREE.Scene();
