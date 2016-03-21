@@ -4,8 +4,16 @@ import ReactDOM from 'react-dom'
 export default class ThreeView extends React.Component {
   constructor(props) {
     super(props);
+
+    this.onPerspectiveClick = this.onPerspectiveClick.bind(this);
+    this.onOrthographicClick = this.onOrthographicClick.bind(this);
+
+
+    this.perspectiveProjectionMatrix = (new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 )).projectionMatrix;
+    this.orthographicProjectionMatrix = (new THREE.OrthographicCamera( window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 5000 )).projectionMatrix;
+    this.cameraAnimationT = 0;
+
     this.camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 );
-    //this.camera = new THREE.OrthographicCamera( window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 5000 );
     this.camera.position.z = 0;
     this.camera.position.y = 800;
     this.scene = new THREE.Scene();
@@ -211,6 +219,54 @@ export default class ThreeView extends React.Component {
     return axis;
 
   }
+  onPerspectiveClick(e) {
+    this.cameraAnimationT += 0.0;
+    this.animateToPerspectiveMatrix();
+  }
+  onOrthographicClick(e) {
+    this.cameraAnimationT += 0.0;
+    this.animateToOrthographicMatrix();
+  }
+  animateToPerspectiveMatrix() {
+    this.cameraAnimationT += 0.0005;
+    if(this.cameraAnimationT > 0 && this.cameraAnimationT <= 1) {
+      var sumDiff = 0;
+      for(var i = 0; i < 16; i++) {
+        sumDiff += Math.abs(this.perspectiveProjectionMatrix.elements[i] - this.camera.projectionMatrix.elements[i]);
+        this.camera.projectionMatrix.elements[i] = (this.perspectiveProjectionMatrix.elements[i] - this.camera.projectionMatrix.elements[i]) * (this.cameraAnimationT * this.cameraAnimationT) + this.camera.projectionMatrix.elements[i];
+      }
+      if(sumDiff > 5.6) {
+        window.requestAnimationFrame(this.animateToPerspectiveMatrix.bind(this));
+      } else {
+        this.cameraAnimationT = 0.0;
+        for(var i = 0; i < 16; i++) {
+          this.camera.projectionMatrix.elements[i] = this.perspectiveProjectionMatrix.elements[i];
+        }
+      }
+    } else {
+      this.cameraAnimationT = 0.0;
+    }
+  }
+  animateToOrthographicMatrix() {
+    this.cameraAnimationT += 0.0005;
+    if(this.cameraAnimationT > 0 && this.cameraAnimationT <= 1) {
+      var sumDiff = 0;
+      for(var i = 0; i < 16; i++) {
+        sumDiff += Math.abs(this.orthographicProjectionMatrix.elements[i] - this.camera.projectionMatrix.elements[i]);
+        this.camera.projectionMatrix.elements[i] = (this.orthographicProjectionMatrix.elements[i] - this.camera.projectionMatrix.elements[i]) * Math.sqrt(this.cameraAnimationT) + this.camera.projectionMatrix.elements[i];
+      }
+      if(sumDiff > 0.001) {
+        window.requestAnimationFrame(this.animateToOrthographicMatrix.bind(this));
+      } else {
+        this.cameraAnimationT = 0.0;
+        for(var i = 0; i < 16; i++) {
+          this.camera.projectionMatrix.elements[i] = this.orthographicProjectionMatrix.elements[i];
+        }
+      }
+    } else {
+      this.cameraAnimationT = 0.0;
+    }
+  }
   animate() {
     this.controls.update();
     this.renderer.render(this.scene,this.camera);
@@ -372,6 +428,15 @@ export default class ThreeView extends React.Component {
     }
   }
   render() {
-    return <div />;
+    return <div>
+             <div className="btn-group" role="group" data-toggle="buttons" aria-label="Camera">
+               <label className="btn btn-default active" onClick={this.onPerspectiveClick}>
+                 <input ref="perspectiveButton" type="radio" name="matrix" /> Perspective
+               </label>
+               <label className="btn btn-default" onClick={this.onOrthographicClick}>
+                 <input ref="orthographicButton" type="radio" name="matrix" /> Orthographic
+               </label>
+             </div>
+           </div>;
   }
 }
