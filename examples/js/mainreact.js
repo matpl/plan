@@ -10,6 +10,10 @@ import DropZoneComponent from './dropzonecomponent.js';
 import CanvasComponent from './canvascomponent.js';
 import ToolsComponent from './toolscomponent.js';
 
+import PlanStore from './stores/PlanStore.js';
+
+var planStore = new PlanStore();
+
 //todowawa now now now: check offset with cursor and dotted line when panning fast... it makes no sense. Also there is some kind of offset until the release of middle mouse button...
 //todowawa: only show the guide that we snap on??? (at least be an option or something)
 //todowawa: have some kind of viewport variable for what part of the canvas is actually visible (so we don't have to do the this.scale formula every single time)
@@ -22,11 +26,10 @@ import ToolsComponent from './toolscomponent.js';
 //todowawa: escape for ending the wall
 //todowawa: magic number 6
 
-
 export default class MainComponent extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {image: null, walls: []};
+    this.state = planStore.getState();
 
     this.setImage = this.setImage.bind(this);
     this.addPoint = this.addPoint.bind(this);
