@@ -12,8 +12,6 @@ import ToolsComponent from './toolscomponent.js';
 
 import PlanStore from './stores/PlanStore.js';
 
-var planStore = new PlanStore();
-
 //todowawa now now now: check offset with cursor and dotted line when panning fast... it makes no sense. Also there is some kind of offset until the release of middle mouse button...
 //todowawa: only show the guide that we snap on??? (at least be an option or something)
 //todowawa: have some kind of viewport variable for what part of the canvas is actually visible (so we don't have to do the this.scale formula every single time)
@@ -29,34 +27,27 @@ var planStore = new PlanStore();
 export default class MainComponent extends React.Component {
   constructor(props) {
     super(props);
-    this.state = planStore.getState();
+    this.state = PlanStore.getState();
 
+    this.onStoreChange = this.onStoreChange.bind(this);
     this.setImage = this.setImage.bind(this);
-    this.addPoint = this.addPoint.bind(this);
+  }
+  componentDidMount() {
+    PlanStore.addChangeListener(this.onStoreChange);
+  }
+  componentWillUnmount() {
+    PlanStore.removeChangeListener(this.onStoreChange);
+  }
+  onStoreChange() {
+    this.setState(PlanStore.getState());
   }
   setImage(url) {
     this.setState({image: url});
   }
-  addPoint(point) {
-    var newState = $.extend({}, this.state);
-    if(newState.walls.length == 0) {
-      newState.walls.push({id: 1, points: []});
-    }
-
-    var wall = newState.walls[newState.walls.length - 1];
-
-    wall.points.push({id: wall.points.length + 1, x: point.x, y: point.y});
-    if(wall.points.length > 1 && wall.points[0].x == wall.points[wall.points.length - 1].x && wall.points[0].y == wall.points[wall.points.length - 1].y) {
-     // contour is done
-     newState.walls.push({id: newState.walls.length + 1, points: []});
-    }
-
-    this.setState(newState);
-  }
   render() {
        return <div>
                 <ToolsComponent />
-                <CanvasComponent image={this.state.image} walls={this.state.walls} addPoint={this.addPoint} />
+                <CanvasComponent image={this.state.image} walls={this.state.walls} />
                 <DropZoneComponent setImage={this.setImage} />
                 <ThreeView walls={this.state.walls} />
               </div>;

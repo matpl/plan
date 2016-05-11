@@ -1,4 +1,6 @@
 
+import PlanActions from './actions/PlanActions';
+
 var $ = window.jQuery = require('jquery');
 import React from 'react';
 
@@ -107,7 +109,7 @@ export default class CanvasComponent extends React.Component {
       // the mousePosition can't be the same as the last added point
       var wall = this.props.walls.length == 0 ? null : this.props.walls[this.props.walls.length - 1];
       if(wall == null || wall.points.length == 0 || this.mousePosition.x != wall.points[wall.points.length - 1].x || this.mousePosition.y != wall.points[wall.points.length - 1].y) {
-        this.props.addPoint(this.mousePosition);
+        PlanActions.addPoint(this.mousePosition);
       }
     }
   }
